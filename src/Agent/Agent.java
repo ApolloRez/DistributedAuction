@@ -29,7 +29,7 @@ public class Agent {
         make a bid on an item at the auction house and return
         one of the ENUM regarding the result.
          */
-
+        return null;
     }
 
     public void contactBank(AuctionENUMs result) {
