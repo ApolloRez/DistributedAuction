@@ -1,4 +1,4 @@
-package shared;
+package bankservice.message;
 
 public enum MessegeType {
     //Idea Examples

@@ -1,4 +1,4 @@
-package bank;
+package bankservice;
 
 import java.util.*;
 
@@ -31,4 +31,3 @@ public class Bank {
         }
     }
 }
-
