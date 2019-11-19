@@ -1,7 +1,12 @@
 package Agent;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 public class Agent {
 
@@ -10,9 +15,24 @@ public class Agent {
     private double balance;
     private int accountNumber;
 
-    public Agent() {
-                // connect to the bank.
+    public Agent(String hostName, int portNumber) {
 
+        try (Socket socket = new Socket(hostName, portNumber);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in =
+                     new BufferedReader(new InputStreamReader(socket.getInputStream()))
+        )  {
+            BufferedReader stdIn =
+                    new BufferedReader(new InputStreamReader(System.in));
+            String fromServer = in.readLine();
+            while(fromServer != null) {
+                System.out.println("Bank: ");
+            }
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -40,6 +60,10 @@ public class Agent {
          */
     }
 
+    public static void main(String[] args) {
+
+
+    }
 
 
 
