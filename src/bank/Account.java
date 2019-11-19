@@ -1,19 +1,24 @@
 package bank;
 
+import java.util.UUID;
+
 public class Account {
-    private int accountNumber;
-    private int availableBalance;
+    private UUID accountID;
+    private double availableBalance;
 
-    public Account(int accountNumber, int availableBalance) {
-        this.accountNumber = accountNumber;
-        this.availableBalance = availableBalance;
+    public Account(UUID accountID) {
+        this.accountID = accountID;
+        availableBalance = 0;
     }
-
-    public int getAccountNumber() {
-        return accountNumber;
+    public void deposit(double amount) {
+        availableBalance += amount;
     }
-
-    public int getAvailableBalance() {
-        return availableBalance;
+    public boolean withdraw(double amount) {
+        if (availableBalance - amount < 0) {
+            return false;
+        } else {
+            availableBalance -= amount;
+            return true;
+        }
     }
 }

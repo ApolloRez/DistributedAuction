@@ -1,40 +1,33 @@
 package bank;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
-public class Bank implements Runnable {
-    private List<Account> accounts;
-    private List<Integer> existingAccounts;
+public class Bank {
+    private Map<UUID, Account> accounts;
     public Bank() {
-        accounts = new ArrayList<>();
-        existingAccounts = new ArrayList<>();
+        accounts = new HashMap<>();
     }
-
-    /**
-     * Create a new account w/ initial funds.
-     * @param initialFunds int
-     */
-    public void createAccount(int initialFunds) {
-        int number;
-        do {
-            Random rand = new Random();
-            number = rand.nextInt(8999)+1000;
-        }while(!existingAccounts.contains(number));
-        existingAccounts.add(number);
-        accounts.add(new Account(number, initialFunds));
+    public UUID createAccount() {
+        return UUID.randomUUID();
     }
-
-    @Override
-    public void run() {
-
+    public boolean depositFunds(UUID accountID, double amount) {
+        if (accounts.containsKey(accountID)) {
+            accounts.get(accountID).deposit(amount);
+            return true;
+        } else {
+            return false;
+        }
     }
-
-    public static void main(String[] args) {
-        Random rand = new Random();
-        for (int i = 0; i < 100000; i++) {
-            System.out.println(rand.nextInt(8999) + 1000);
+    public boolean transferFunds(UUID client, UUID auctionHouse, double amount) {
+        if (accounts.containsKey(client) && accounts.containsKey(auctionHouse)) {
+            if(accounts.get(client).withdraw(amount)) {
+                accounts.get(auctionHouse).deposit(amount);
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
         }
     }
 }
