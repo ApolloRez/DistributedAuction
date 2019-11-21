@@ -1,19 +1,24 @@
 package Agent;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class Agent {
 
-    private ServerSocket server = null;
+    private ServerSocket BankServer = null;
+    private ServerSocket AuctionServer = null;
     private Socket client = null;
     private double balance;
     private int accountNumber;
+    private ObjectInputStream bankIn;
+    private ObjectOutputStream bankOut;
+    public ObjectInputStream auctionIn;
+    private ObjectOutputStream auctionOut;
+
+    //add a list of items the agent has won.
+
 
     public Agent(String hostName, int portNumber) {
 
@@ -21,7 +26,8 @@ public class Agent {
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in =
                      new BufferedReader(new InputStreamReader(socket.getInputStream()))
-        )  {
+        )
+        {
             BufferedReader stdIn =
                     new BufferedReader(new InputStreamReader(System.in));
             String fromServer = in.readLine();
@@ -35,6 +41,21 @@ public class Agent {
         }
     }
 
+
+    public void connectAuctionServer(String hostName, int portNumber) throws IOException {
+        try (Socket socket = new Socket(hostName, portNumber);
+             auctionIn = new ObjectInputStream(socket.getOutputStream(), true));
+             auctionOut = new ObjectInputStream(new InputStreamReader(socket.getInputStream()))
+        )
+        {
+            registerAuctionHouse();
+        }
+             // use object output stream
+        {
+
+        }
+
+    }
 
     public void connectToAuctionHouse(/*IP or somethin?*/) {
         /*
@@ -59,6 +80,12 @@ public class Agent {
         this might not be the exact best method to handle all of the results.
          */
     }
+
+    public void registerAuctionHouse() {
+
+    }
+
+
 
     public static void main(String[] args) {
 
