@@ -17,16 +17,16 @@ public class AuctionMessage implements Serializable {
     private Item itemID;       //The item you want to bid on
     private UUID accountId; //ID of client when first contacting Auction House
 
-    protected enum AMType {
+    public enum AMType{
         BID,        //client wants to bid on item
         BID_NOTIF,  //auction lets agent know they won or someone else bid
-        REGISTER,    //client first contacts Auction house
-        ACCEPTANCE, // TODO comment these -AO
-        REJECTION,
-        OUTBID,
-        WINNER
+        REGISTER,    //client first contacts Auction house/ Auction responds
+        ACCEPTANCE, //Auction lets agent know their bid was accepted
+        REJECTION,  //Auction lets agent know their bid was denied
+        OUTBID,     //Auction lets agent know their bid was out bidded
+        WINNER      //Auction lets agent know they won bid
     }
-    private static class Builder {
+    public static class Builder {
         private String notification = null;
         private AMType type = null;
         private ArrayList<Item> catalogue = null;
@@ -54,6 +54,12 @@ public class AuctionMessage implements Serializable {
             this.accountId = accountId;
             return this;
         }
+        public static Builder newB(){
+            return new Builder();
+        }
+        public AuctionMessage build(){
+            return new AuctionMessage(this);
+        }
     }
 
     public AuctionMessage(Builder builder) {
@@ -69,7 +75,7 @@ public class AuctionMessage implements Serializable {
         return notification;
     }
 
-    public Enum getType(){
+    public AMType getType(){
         return type;
     }
 

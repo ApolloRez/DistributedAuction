@@ -1,30 +1,34 @@
 package AuctionHouse;
 
 import java.io.*;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import bankservice.*;
+import java.util.*;
+
 import bankservice.message.Message;
-import com.sun.security.ntlm.Client;
+import shared.AuctionMessage;
+import shared.AuctionMessage.AMType;
 
 public class AuctionHouse{
     private ServerSocket server;
-    private Socket client;
+    private Socket auctionClient;
     private ObjectInputStream input;
     private ObjectOutputStream out;
+    private ItemList list;
     private ArrayList<Item> catalogue = new ArrayList<Item>();
-    private int balance = 0;
+    private Set<AgentProxy> activeAgents = new HashSet<>();
+    private double balance = 0;
     private AuctionHouse(String address,int clientPort, int serverPort){
         setupItemList();
             try{
-                client = new Socket(address, clientPort);
+                auctionClient = new Socket(address, clientPort);
                 server = new ServerSocket(serverPort);
+                setupItemList();
+                addItems(3);
                 Thread serverThread = new Thread(new AuctionServer());
-                //serverThread.start();
-                out    = new ObjectOutputStream(client.getOutputStream());
-                Thread inThread = new Thread(new ClientIn());
+                serverThread.start();
+                out = new ObjectOutputStream(auctionClient.getOutputStream());
+                Thread inThread = new Thread(new AuctionIn());
                 inThread.start();
             } catch(IOException u){
                 System.out.println(u);
@@ -58,8 +62,19 @@ public class AuctionHouse{
             }*/
     }
 
+    private void addItems(int needed){
+        while(needed >= 0){
+            String name = list.getRandomName();
+            int random = new Random().nextInt(50);
+            double value = random;
+            Item item = new Item(name,value);
+            catalogue.add(item);
+            needed--;
+        }
+    }
     private void setupItemList(){
-
+        int test = new Random().nextInt(20);
+        ItemList list = ItemList.createNameList("Destiny2.txt");
     }
 
     private class AuctionServer implements Runnable{
@@ -69,6 +84,10 @@ public class AuctionHouse{
             try{
                 while(true){
                     Socket clientSocket = server.accept();
+                    AgentProxy newAgent = new AgentProxy(clientSocket);
+                    activeAgents.add(newAgent);
+                    Thread client = new Thread(newAgent);
+                    client.start();
                     Thread.sleep(50);
                 }
             }catch(IOException| InterruptedException e){
@@ -77,14 +96,75 @@ public class AuctionHouse{
         }
     }
 
-    private class ClientIn implements  Runnable{
+    private class AuctionIn implements  Runnable{
+        private ObjectInputStream clientInput;
         @Override
         public void run() {
             System.out.println("clientIn thread started");
             try{
-                input  = new ObjectInputStream(client.getInputStream());
+                clientInput = new ObjectInputStream(auctionClient.getInputStream());
+                input  = new ObjectInputStream(auctionClient.getInputStream());
                 Message message = (Message)input.readObject();
             }catch(IOException |ClassNotFoundException e){
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private class AgentProxy implements Runnable{
+        private Socket agentSocket;
+        private ObjectInputStream agentIn;
+        private ObjectOutputStream agentOut;
+        private UUID id;
+        private AuctionMessage message = null;
+        @Override
+        public void run() {
+            do{
+                try{
+                    message = (AuctionMessage) agentIn.readObject();
+                    process(message);
+                }catch(IOException|ClassNotFoundException e){
+                    e.printStackTrace();
+                }
+            }while(message != null);
+        }
+        private void process(AuctionMessage message){
+            AMType type = message.getType();
+            switch(type){
+                case BID:      bid(message);
+                               break;
+                case REGISTER: register(message);
+                               break;
+                default: System.out.println("uh oh");
+            }
+        }
+        private void register(AuctionMessage message){
+            id = message.getId();
+            activeAgents.add(this);
+            AuctionMessage reply = AuctionMessage.Builder.newB()
+            .type(AMType.ACCEPTANCE).list(catalogue).build();
+            sendOut(reply);
+        }
+        private void bid(AuctionMessage message){
+            Item bidItem = message.getItem();
+            UUID bidderId = message.getId();
+            double amount = message.getAmount();
+        }
+        private void sendOut(AuctionMessage message){
+            try{
+                agentOut.writeObject(message);
+            }catch(IOException e){
+                e.printStackTrace();
+            }
+        }
+
+        public AgentProxy(Socket socket){
+            this.agentSocket = socket;
+            try{
+                agentIn = new ObjectInputStream(agentSocket.getInputStream());
+                agentOut = new ObjectOutputStream(
+                                agentSocket.getOutputStream());
+            }catch(IOException e){
                 e.printStackTrace();
             }
         }

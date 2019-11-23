@@ -1,26 +1,41 @@
 package AuctionHouse;
 
 import java.util.Random;
+import java.util.UUID;
 
 public class Item {
     private String name;
-    private int value;
+    private double value;
+    private UUID bidderId;
+    private int timeLeft;
 
-    private String getName(){
+    public String name(){
         return name;
     }
 
-    private int getValue(){
+    public double value(){
         return value;
     }
 
-    private void setNewValue(int value){
+    public void setNewValue(int value){
         this.value = value;
     }
 
-    public Item(int value, String name){
-        Random random = new Random();
+    public UUID getBidder(){
+        return bidderId;
+    }
+
+    public boolean over(){
+        return timeLeft <= 0;
+    }
+
+    public void decrement(){
+        timeLeft--;
+    }
+
+    public Item(String name, double value){
         this.value = value;
         this.name = name;
+        timeLeft = 30;
     }
 }
