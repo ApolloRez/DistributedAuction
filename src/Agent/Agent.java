@@ -7,6 +7,7 @@ import java.net.UnknownHostException;
 
 public class Agent {
 
+    public boolean connectedToBank;
     private ServerSocket BankServer = null;
     private ServerSocket AuctionServer = null;
     private Socket client = null;
@@ -93,7 +94,12 @@ public class Agent {
     }
 
 
+    public void registerBank() {
+    }
 
+    public void closeAgent() {
+    }
 
-
+    public void bankDeposit(int deposit) {
+    }
 }
