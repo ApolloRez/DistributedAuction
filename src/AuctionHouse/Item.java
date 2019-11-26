@@ -32,6 +32,9 @@ public class Item {
     public void decrement(){
         timeLeft--;
     }
+    public void slateForRemoval(){
+        timeLeft = -1;
+    }
 
     public Item(String name, double value){
         this.value = value;
