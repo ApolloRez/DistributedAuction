@@ -1,5 +1,7 @@
 package bankservice.message;
 
+import shared.NetInfo;
+
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -8,13 +10,19 @@ public class Message implements Serializable {
     private final UUID sender;
     private final UUID accountId;
     private final Command command;
+    private final NetInfo netInfo;
 
     private static class Builder {
         private Double amount = null;
         private UUID sender = null;
         private UUID accountId = null;
         private Command command = null;
+        private NetInfo netInfo = null;
 
+        public Builder netInfo(NetInfo netInfo) {
+            this.netInfo = netInfo;
+            return this;
+        }
         public Builder command(Command command) {
             this.command = command;
             return this;
@@ -38,6 +46,7 @@ public class Message implements Serializable {
         this.sender = builder.sender;
         this.accountId = builder.accountId;
         this.command = builder.command;
+        this.netInfo = builder.netInfo;
     }
 
     public Double getAmount() {
@@ -56,8 +65,18 @@ public class Message implements Serializable {
         return command;
     }
 
+    public NetInfo getNetInfo() {
+        return netInfo;
+    }
     public enum Command {
-        DEPOSIT, TRANSFER, HOLD, GET_AVAILABLE, GET_RESERVED
+        DEPOSIT,
+        TRANSFER,
+        HOLD,
+        GET_AVAILABLE,
+        GET_RESERVED,
+        REGISTER,
+        GET_NETINFO
+
     }
 
     public static void main(String[] args) {
