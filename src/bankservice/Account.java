@@ -20,6 +20,9 @@ public class Account {
         heldFunds = 0;
     }
 
+    public double getAvailableBalance() {
+        return
+    }
     /**
      * Deposit an amount of currency into this account.
      * @param amount double
