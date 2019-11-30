@@ -1,12 +1,10 @@
-package bankservice.message;
-
-import shared.NetInfo;
+package shared;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
-public class Message implements Serializable {
+public class BankMessage implements Serializable {
 
     private final Double amount;
     private final UUID sender;
@@ -15,7 +13,7 @@ public class Message implements Serializable {
     private final Response response;
     private final List<NetInfo> netInfo;
 
-    public Message(Builder builder) {
+    public BankMessage(Builder builder) {
         this.amount = builder.amount;
         this.sender = builder.sender;
         this.accountId = builder.accountId;
@@ -25,12 +23,13 @@ public class Message implements Serializable {
     }
 
     public static void main(String[] args) {
-        Message message = new Builder()
+        BankMessage bankMessage = new Builder()
                 .accountId(UUID.randomUUID())
+                .amount(.32)
                 .command(Command.HOLD)
                 .send(UUID.randomUUID());
-        System.out.println(message.getAccountId());
-        System.out.println(message.getAmount());
+        System.out.println(bankMessage.getAccountId());
+        System.out.println(bankMessage.getAmount());
     }
 
     public Response getResponse() {
@@ -107,9 +106,9 @@ public class Message implements Serializable {
             return this;
         }
 
-        public Message send(UUID sender) {
+        public BankMessage send(UUID sender) {
             this.sender = sender;
-            return new Message(this);
+            return new BankMessage(this);
         }
     }
 }

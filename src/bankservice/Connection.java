@@ -1,6 +1,6 @@
 package bankservice;
 
-import bankservice.message.Message;
+import shared.BankMessage;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -33,45 +33,45 @@ public class Connection implements Runnable {
     @Override
     public void run() {
         try {
-            Message message;
-            message = (Message) objectInputStream.readObject();
-            if(message.getCommand() == Message.Command.REGISTER_CLIENT) {
+            BankMessage bankMessage;
+            bankMessage = (BankMessage) objectInputStream.readObject();
+            if (bankMessage.getCommand() == BankMessage.Command.REGISTER_CLIENT) {
                 objectOutputStream.writeObject(
-                        new Message.Builder()
+                        new BankMessage.Builder()
                                 .accountId(bank.registerClient())
                                 .send(bank.getId()));
             }
-            if (message.getCommand() == Message.Command.REGISTER_AH) {
+            if (bankMessage.getCommand() == BankMessage.Command.REGISTER_AH) {
                 objectOutputStream.writeObject(
-                        new Message.Builder()
+                        new BankMessage.Builder()
                                 .accountId(bank.registerAuctionHouse(
-                                        message.getNetInfo().get(0)))
+                                        bankMessage.getNetInfo().get(0)))
                                 .send(bank.getId()));
             }
             while (running) {
-                message = (Message) objectInputStream.readObject();
-                switch (message.getCommand()) {
+                bankMessage = (BankMessage) objectInputStream.readObject();
+                switch (bankMessage.getCommand()) {
                     case DEPOSIT: {
-                        bank.depositFunds(message.getSender(),
-                                message.getAmount());
+                        bank.depositFunds(bankMessage.getSender(),
+                                bankMessage.getAmount());
                         break;
                     }
                     case HOLD: {
-                        if(bank.holdFunds(message.getAccountId(),
-                                message.getAmount())) {
-                            writeMessage(new Message.Builder()
-                                    .response(Message.Response.SUCCESS)
+                        if (bank.holdFunds(bankMessage.getAccountId(),
+                                bankMessage.getAmount())) {
+                            writeMessage(new BankMessage.Builder()
+                                    .response(BankMessage.Response.SUCCESS)
                                     .send(bank.getId()));
                         } else {
-                            writeMessage(new Message.Builder()
-                                    .response(Message.Response.INSUFFICIENT_FUNDS)
+                            writeMessage(new BankMessage.Builder()
+                                    .response(BankMessage.Response.INSUFFICIENT_FUNDS)
                                     .send(bank.getId()));
                         }
                     }
                     case GET_AVAILABLE: {
-                        writeMessage(new Message.Builder().amount(
-                                bank.
-                        ));
+                        writeMessage(new BankMessage.Builder().amount(
+                                bank.getAccountFunds(bankMessage.getAccountId()))
+                                .send(bank.getId()));
                     }
                 }
             }
@@ -81,10 +81,12 @@ public class Connection implements Runnable {
             e.printStackTrace();
         }
     }
-    private void writeMessage(Message message) throws IOException {
-        objectOutputStream.writeObject(message);
+
+    private void writeMessage(BankMessage bankMessage) throws IOException {
+        objectOutputStream.writeObject(bankMessage);
     }
-    private Message readMessage() throws IOException, ClassNotFoundException {
-        return (Message)objectInputStream.readObject();
+
+    private BankMessage readMessage() throws IOException, ClassNotFoundException {
+        return (BankMessage) objectInputStream.readObject();
     }
 }

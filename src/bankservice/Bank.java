@@ -122,7 +122,13 @@ public class Bank {
         }
         return false;
     }
+
+    /**
+     * Return the available balance of said account.
+     * @param accountId UUID
+     * @return double
+     */
     public double getAccountFunds(UUID accountId) {
-        return accounts.get(accountId).
+        return accounts.get(accountId).getAvailableBalance();
     }
 }

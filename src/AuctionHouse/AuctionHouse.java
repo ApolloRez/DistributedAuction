@@ -5,8 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 
-import bankservice.message.Message;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+import shared.BankMessage;
 import shared.AuctionMessage;
 import shared.AuctionMessage.AMType;
 
@@ -124,7 +123,7 @@ public class AuctionHouse{
             try{
                 clientInput = new ObjectInputStream(auctionClient.getInputStream());
                 input  = new ObjectInputStream(auctionClient.getInputStream());
-                Message message = (Message)input.readObject();
+                BankMessage bankMessage = (BankMessage)input.readObject();
             }catch(IOException |ClassNotFoundException e){
                 e.printStackTrace();
             }
@@ -263,9 +262,9 @@ public class AuctionHouse{
         }
     }
 
-    private void sendToBank(Message message){
+    private void sendToBank(BankMessage bankMessage){
         try{
-            out.writeObject(message);
+            out.writeObject(bankMessage);
         }catch (IOException e){
             e.printStackTrace();
         }

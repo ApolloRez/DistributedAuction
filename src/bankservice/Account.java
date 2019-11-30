@@ -21,7 +21,7 @@ public class Account {
     }
 
     public double getAvailableBalance() {
-        return
+        return availableBalance;
     }
     /**
      * Deposit an amount of currency into this account.
