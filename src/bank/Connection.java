@@ -20,9 +20,10 @@ public class Connection implements Runnable {
     /**
      * The connection object handles the communication between the bank and
      * the clients.
+     *
      * @param socket Socket
      * @param bank   Bank
-     * @throws IOException
+     * @throws IOException Socket disconnect
      */
     public Connection(Socket socket, Bank bank) throws IOException {
         connectionLoggerService = ConnectionLoggerService.getInstance();
@@ -83,7 +84,7 @@ public class Connection implements Runnable {
                         break;
                     }
                     case HOLD: {
-                        if (bank.holdFunds(message.getTargetId(),
+                        if (bank.holdFunds(message.getAccountId(),
                                 message.getAmount())) {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.SUCCESS)
@@ -96,7 +97,7 @@ public class Connection implements Runnable {
                         break;
                     }
                     case RELEASE_HOLD: {
-                        if (bank.releaseFunds(message.getTargetId(),
+                        if (bank.releaseFunds(message.getAccountId(),
                                 message.getAmount())) {
                             writeMessage(new Message.Builder()
                                     .amount(message.getAmount())
@@ -110,7 +111,7 @@ public class Connection implements Runnable {
                         break;
                     }
                     case TRANSFER: {
-                        if (bank.transferFunds(message.getTargetId(),
+                        if (bank.transferFunds(message.getAccountId(),
                                 message.getSender(), message.getAmount())) {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.SUCCESS)
@@ -136,7 +137,7 @@ public class Connection implements Runnable {
                     }
                     case GET_RESERVED: {
                         writeMessage(new Message.Builder()
-                                .amount(bank.getHeldFunds(message.getTargetId()))
+                                .amount(bank.getHeldFunds(message.getAccountId()))
                                 .send(bank.getId()));
                         break;
                     }
@@ -157,12 +158,11 @@ public class Connection implements Runnable {
 
     /**
      * Write a message to the ObjectOutputStream.
-     *
      * @param message Message
      * @throws IOException Cannot write to ObjectOutputStream
      */
     private void writeMessage(Message message) throws IOException {
-        connectionLoggerService.add(message);
+        connectionLoggerService.add(message.toString());
         objectOutputStream.writeObject(message);
     }
 
@@ -174,7 +174,7 @@ public class Connection implements Runnable {
      */
     private Message readMessage() throws IOException, ClassNotFoundException {
         Message message = (Message) objectInputStream.readObject();
-        connectionLoggerService.add(message);
+        connectionLoggerService.add(message.toString());
         return message;
     }
 }

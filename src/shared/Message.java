@@ -9,7 +9,7 @@ public class Message implements Serializable {
     private static final long serialVersionUID = -1195974328835714539L;
     private final Double amount;
     private final UUID sender;
-    private final UUID targetId;
+    private final UUID accountId;
     private final Command command;
     private final Response response;
     private final List<NetInfo> netInfo;
@@ -22,7 +22,7 @@ public class Message implements Serializable {
     private Message(Builder builder) {
         this.amount = builder.amount;
         this.sender = builder.sender;
-        this.targetId = builder.targetId;
+        this.accountId = builder.accountId;
         this.command = builder.command;
         this.netInfo = builder.netInfo;
         this.response = builder.response;
@@ -34,13 +34,12 @@ public class Message implements Serializable {
                 .amount(.32)
                 .command(Command.HOLD)
                 .send(UUID.randomUUID());
-        System.out.println(message.getTargetId());
+        System.out.println(message.getAccountId());
         System.out.println(message.getAmount());
     }
 
     /**
      * Get the response.
-     *
      * @return enum
      */
     public Response getResponse() {
@@ -49,7 +48,6 @@ public class Message implements Serializable {
 
     /**
      * Get the amount.
-     *
      * @return Double
      */
     public Double getAmount() {
@@ -58,7 +56,6 @@ public class Message implements Serializable {
 
     /**
      * Get the UUID of the message sender.
-     *
      * @return UUID
      */
     public UUID getSender() {
@@ -70,13 +67,12 @@ public class Message implements Serializable {
      *
      * @return UUID
      */
-    public UUID getTargetId() {
-        return targetId;
+    public UUID getAccountId() {
+        return accountId;
     }
 
     /**
      * Get the message command.
-     *
      * @return enum
      */
     public Command getCommand() {
@@ -84,8 +80,7 @@ public class Message implements Serializable {
     }
 
     /**
-     * Get a list of the NetInfo of the auction houses
-     *
+     * Get a list of the NetInfo of the auction houses.
      * @return List<NetInfo></NetInfo>
      */
     public List<NetInfo> getNetInfo() {
@@ -97,7 +92,7 @@ public class Message implements Serializable {
         return "Message{" +
                 "amount=" + amount +
                 ", sender=" + sender +
-                ", accountId=" + targetId +
+                ", accountId=" + accountId +
                 ", command=" + command +
                 ", response=" + response +
                 ", netInfo=" + netInfo +
@@ -106,6 +101,10 @@ public class Message implements Serializable {
 
     /**
      * Enum representing responses from the bank.
+     * SUCCESS - The transaction was successful.
+     * ERROR - Something somewhere went wrong.
+     * INSUFFICIENT_FUNDS - Not enough funds.
+     * INVALID_PARAMETERS - The parameters were wrong somewhere.
      */
     public enum Response {
         SUCCESS,
@@ -116,6 +115,15 @@ public class Message implements Serializable {
 
     /**
      * Enum representing message commands.
+     *         DEPOSIT - Deposit an amount into the senderId account.
+     *         TRANSFER - Transfer an amount from senderId to accountId.
+     *         HOLD - Hold an amount on an accountId.
+     *         RELEASE_HOLD - Release an amount from an accountId.
+     *         GET_AVAILABLE - Get available balance from the accountId.
+     *         GET_RESERVED - Get the reserved funds from the accountId.
+     *         REGISTER_CLIENT - Register a client account.
+     *         REGISTER_AH - Register an AuctionHouse account.
+     *         GET_NET_INFO - Get the AuctionHouse net information.
      */
     public enum Command {
         DEPOSIT,
@@ -135,14 +143,13 @@ public class Message implements Serializable {
     public static class Builder {
         private Double amount = null;
         private UUID sender = null;
-        private UUID targetId = null;
+        private UUID accountId = null;
         private Command command = null;
         private Response response = null;
         private List<NetInfo> netInfo = null;
 
         /**
          * Assign the NetInfo to this message.
-         *
          * @param netInfo List<NetInfo></NetInfo>
          * @return Builder
          */
@@ -153,7 +160,6 @@ public class Message implements Serializable {
 
         /**
          * Assign the command to this Message.
-         *
          * @param command Enum
          * @return Builder
          */
@@ -164,7 +170,6 @@ public class Message implements Serializable {
 
         /**
          * Assign the amount to this Message.
-         *
          * @param amount Double
          * @return Builder
          */
@@ -175,18 +180,16 @@ public class Message implements Serializable {
 
         /**
          * Assign the UUID to this Message.
-         *
          * @param accountId UUID
          * @return Builder
          */
         public Builder accountId(UUID accountId) {
-            this.targetId = accountId;
+            this.accountId = accountId;
             return this;
         }
 
         /**
          * Assign the response to this Message.
-         *
          * @param response enum
          * @return Builder
          */
@@ -197,7 +200,6 @@ public class Message implements Serializable {
 
         /**
          * Assign the sender UUID to this message and return a Message object.
-         *
          * @param sender UUID
          * @return Message
          */

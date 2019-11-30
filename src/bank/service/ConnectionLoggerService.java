@@ -1,26 +1,33 @@
 package bank.service;
 
-import javafx.beans.property.SimpleListProperty;
-import shared.Message;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.scene.control.ListView;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
+/**
+ * Singleton list to log connections and transactions to the server.
+ */
 public class ConnectionLoggerService {
-    private final Queue<Message> messageLog = new ConcurrentLinkedQueue<>();
-    private final SimpleListProperty<Message> messages =
-            new SimpleListProperty<>();
+    private final ObservableList<String> messageLog =
+            FXCollections.observableArrayList();
 
     public static ConnectionLoggerService getInstance() {
         return InstanceHolder.INSTANCE;
     }
 
-    public boolean add(Message message) {
-        return messageLog.add(message);
+    public void add(String message) {
+        Platform.runLater(() -> {
+            messageLog.add(message);
+        });
     }
 
     private static class InstanceHolder {
         private static final ConnectionLoggerService INSTANCE =
                 new ConnectionLoggerService();
+    }
+
+    public void setListView(ListView<String> listView) {
+        listView.setItems(messageLog);
     }
 }

@@ -4,14 +4,12 @@ import bank.service.ConnectionLoggerService;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.List;
 
-public class BankServer {
+
+public class BankServer implements Runnable {
     private Integer portNumber;
     private ServerSocket serverSocket;
     private boolean isRunning;
-    private List<Connection> connections;
     private Bank bank;
     private final ConnectionLoggerService connectionLoggerService;
 
@@ -26,21 +24,29 @@ public class BankServer {
         this.portNumber = portNumber;
         this.bank = bank;
         serverSocket = new ServerSocket(this.portNumber);
-        connections = new ArrayList<>();
         isRunning = true;
         connectionLoggerService = ConnectionLoggerService.getInstance();
-        while (isRunning) {
-            Connection connection =
-                    new Connection(serverSocket.accept(), this.bank);
-            connections.add(connection);
-            System.out.println(connection.getSocket().getInetAddress());
-        }
+
     }
 
     /**
-     * Change the boolean variable to false, canceling the bank server loop.
+     * Start this thread.
      */
-    public void isNotRunning() {
-        isRunning = false;
+    public void start() {
+        new Thread(this).start();
+    }
+
+    @Override
+    public void run() {
+        while (isRunning) {
+            try {
+                Connection connection = new Connection(serverSocket.accept(), this.bank);
+                connectionLoggerService.add(
+                        connection.getSocket().getInetAddress().toString());
+                System.out.println(connection.getSocket().getInetAddress());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
