@@ -1,6 +1,6 @@
 package bankservice;
 
-import shared.BankMessage;
+import shared.Message;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -23,6 +23,10 @@ public class Connection implements Runnable {
         new Thread(this).start();
     }
 
+    public Socket getSocket() {
+        return socket;
+    }
+
     /**
      * Stop the running thread.
      */
@@ -33,45 +37,54 @@ public class Connection implements Runnable {
     @Override
     public void run() {
         try {
-            BankMessage bankMessage;
-            bankMessage = (BankMessage) objectInputStream.readObject();
-            if (bankMessage.getCommand() == BankMessage.Command.REGISTER_CLIENT) {
+            Message message;
+            message = (Message) objectInputStream.readObject();
+            if (message.getCommand() == Message.Command.REGISTER_CLIENT) {
                 objectOutputStream.writeObject(
-                        new BankMessage.Builder()
+                        new Message.Builder()
                                 .accountId(bank.registerClient())
                                 .send(bank.getId()));
             }
-            if (bankMessage.getCommand() == BankMessage.Command.REGISTER_AH) {
+            if (message.getCommand() == Message.Command.REGISTER_AH) {
                 objectOutputStream.writeObject(
-                        new BankMessage.Builder()
+                        new Message.Builder()
                                 .accountId(bank.registerAuctionHouse(
-                                        bankMessage.getNetInfo().get(0)))
+                                        message.getNetInfo().get(0)))
                                 .send(bank.getId()));
             }
             while (running) {
-                bankMessage = (BankMessage) objectInputStream.readObject();
-                switch (bankMessage.getCommand()) {
+                message = (Message) objectInputStream.readObject();
+                System.out.println(message);
+                switch (message.getCommand()) {
                     case DEPOSIT: {
-                        bank.depositFunds(bankMessage.getSender(),
-                                bankMessage.getAmount());
+                        bank.depositFunds(message.getSender(),
+                                message.getAmount());
+                        writeMessage(new Message.Builder()
+                                .response(Message.Response.SUCCESS)
+                                .send(bank.getId()));
                         break;
                     }
                     case HOLD: {
-                        if (bank.holdFunds(bankMessage.getAccountId(),
-                                bankMessage.getAmount())) {
-                            writeMessage(new BankMessage.Builder()
-                                    .response(BankMessage.Response.SUCCESS)
+                        if (bank.holdFunds(message.getAccountId(),
+                                message.getAmount())) {
+                            writeMessage(new Message.Builder()
+                                    .response(Message.Response.SUCCESS)
                                     .send(bank.getId()));
                         } else {
-                            writeMessage(new BankMessage.Builder()
-                                    .response(BankMessage.Response.INSUFFICIENT_FUNDS)
+                            writeMessage(new Message.Builder()
+                                    .response(Message.Response.INSUFFICIENT_FUNDS)
                                     .send(bank.getId()));
                         }
+                        break;
+                    }
+                    case UNHOLD: {
+                        break;
                     }
                     case GET_AVAILABLE: {
-                        writeMessage(new BankMessage.Builder().amount(
-                                bank.getAccountFunds(bankMessage.getAccountId()))
+                        writeMessage(new Message.Builder().amount(
+                                bank.getAccountFunds(message.getSender()))
                                 .send(bank.getId()));
+                        break;
                     }
                 }
             }
@@ -80,13 +93,14 @@ public class Connection implements Runnable {
                 NullPointerException e) {
             e.printStackTrace();
         }
+        System.out.println("Finishing");
     }
 
-    private void writeMessage(BankMessage bankMessage) throws IOException {
-        objectOutputStream.writeObject(bankMessage);
+    private void writeMessage(Message message) throws IOException {
+        objectOutputStream.writeObject(message);
     }
 
-    private BankMessage readMessage() throws IOException, ClassNotFoundException {
-        return (BankMessage) objectInputStream.readObject();
+    private Message readMessage() throws IOException, ClassNotFoundException {
+        return (Message) objectInputStream.readObject();
     }
 }

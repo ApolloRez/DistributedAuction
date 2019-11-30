@@ -12,22 +12,33 @@ public class Account {
     /**
      * Constructor
      * Taking a account id, initialize the account with default values.
-     * @param accountID UUID
      */
-    public Account(UUID accountID) {
-        this.accountID = accountID;
+    public Account() {
+        this.accountID = UUID.randomUUID();
         availableBalance = 0;
         heldFunds = 0;
     }
 
     public double getAvailableBalance() {
+        System.out.println(availableBalance);
         return availableBalance;
     }
+
+    public UUID getAccountID() {
+        return accountID;
+    }
+
+    public double getHeldFunds() {
+        return heldFunds;
+    }
+
     /**
      * Deposit an amount of currency into this account.
+     *
      * @param amount double
      */
     public void deposit(double amount) {
+        System.out.println("depositing : " + amount);
         availableBalance += amount;
     }
 

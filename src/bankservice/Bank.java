@@ -45,7 +45,6 @@ public class Bank {
 
     /**
      * Register a client account with this bank and return the id of the account.
-     *
      * @return UUID
      */
     public UUID registerClient() {
@@ -67,7 +66,9 @@ public class Bank {
      * @return UUID
      */
     private UUID createAccount() {
-        return UUID.randomUUID();
+        Account account = new Account();
+        accounts.put(account.getAccountID(), account);
+        return account.getAccountID();
     }
 
     /**
@@ -123,8 +124,16 @@ public class Bank {
         return false;
     }
 
+    public synchronized boolean releaseFunds(UUID accountId, double amount) {
+        if (accounts.containsKey(accountId)) {
+            return accounts.get(accountId).releaseFunds(amount);
+        }
+        return false;
+    }
+
     /**
      * Return the available balance of said account.
+     *
      * @param accountId UUID
      * @return double
      */

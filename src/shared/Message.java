@@ -4,8 +4,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
-public class BankMessage implements Serializable {
+public class Message implements Serializable {
 
+    private static final long serialVersionUID = -1195974328835714539L;
     private final Double amount;
     private final UUID sender;
     private final UUID accountId;
@@ -13,7 +14,7 @@ public class BankMessage implements Serializable {
     private final Response response;
     private final List<NetInfo> netInfo;
 
-    public BankMessage(Builder builder) {
+    public Message(Builder builder) {
         this.amount = builder.amount;
         this.sender = builder.sender;
         this.accountId = builder.accountId;
@@ -23,13 +24,13 @@ public class BankMessage implements Serializable {
     }
 
     public static void main(String[] args) {
-        BankMessage bankMessage = new Builder()
+        Message message = new Builder()
                 .accountId(UUID.randomUUID())
                 .amount(.32)
                 .command(Command.HOLD)
                 .send(UUID.randomUUID());
-        System.out.println(bankMessage.getAccountId());
-        System.out.println(bankMessage.getAmount());
+        System.out.println(message.getAccountId());
+        System.out.println(message.getAmount());
     }
 
     public Response getResponse() {
@@ -56,21 +57,34 @@ public class BankMessage implements Serializable {
         return netInfo;
     }
 
-    public enum Command {
-        DEPOSIT,
-        TRANSFER,
-        HOLD,
-        GET_AVAILABLE,
-        GET_RESERVED,
-        REGISTER_CLIENT,
-        REGISTER_AH,
-        GET_NETINFO,
+    @Override
+    public String toString() {
+        return "Message{" +
+                "amount=" + amount +
+                ", sender=" + sender +
+                ", accountId=" + accountId +
+                ", command=" + command +
+                ", response=" + response +
+                ", netInfo=" + netInfo +
+                '}';
     }
 
     public enum Response {
         SUCCESS,
         ERROR,
         INSUFFICIENT_FUNDS,
+    }
+
+    public enum Command {
+        DEPOSIT,
+        TRANSFER,
+        HOLD,
+        UNHOLD,
+        GET_AVAILABLE,
+        GET_RESERVED,
+        REGISTER_CLIENT,
+        REGISTER_AH,
+        GET_NETINFO,
     }
 
     public static class Builder {
@@ -106,9 +120,9 @@ public class BankMessage implements Serializable {
             return this;
         }
 
-        public BankMessage send(UUID sender) {
+        public Message send(UUID sender) {
             this.sender = sender;
-            return new BankMessage(this);
+            return new Message(this);
         }
     }
 }

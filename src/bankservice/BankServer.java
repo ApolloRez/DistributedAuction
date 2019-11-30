@@ -13,6 +13,7 @@ public class BankServer {
     private Bank bank;
 
     /**
+     *
      * @param portNumber
      * @param bank
      * @throws IOException
@@ -26,8 +27,10 @@ public class BankServer {
         while (isRunning) {
             Connection connection = new Connection(serverSocket.accept(), this.bank);
             connections.add(connection);
+            System.out.println(connection.getSocket().getInetAddress());
         }
     }
+
 
     public void isNotRunning() {
         isRunning = false;

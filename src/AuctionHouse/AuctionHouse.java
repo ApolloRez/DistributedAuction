@@ -1,13 +1,15 @@
 package AuctionHouse;
 
-import java.io.*;
+import shared.AuctionMessage;
+import shared.AuctionMessage.AMType;
+import shared.Message;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-
-import shared.BankMessage;
-import shared.AuctionMessage;
-import shared.AuctionMessage.AMType;
 
 public class AuctionHouse{
     private ServerSocket server;
@@ -106,34 +108,22 @@ public class AuctionHouse{
                     client.start();
                     Thread.sleep(50);
                 }
-            }catch(IOException| InterruptedException e){
+            } catch (IOException | InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    /**
-     * Input for the auction from bank
-     */
-    private class AuctionIn implements  Runnable{
-        private ObjectInputStream clientInput;
-        @Override
-        public void run() {
-            System.out.println("clientIn thread started");
-            try{
-                clientInput = new ObjectInputStream(auctionClient.getInputStream());
-                input  = new ObjectInputStream(auctionClient.getInputStream());
-                BankMessage bankMessage = (BankMessage)input.readObject();
-            }catch(IOException |ClassNotFoundException e){
-                e.printStackTrace();
-            }
-        }
+    public static void main(String[] args) {
+        int clientPort = Integer.parseInt(args[1]);
+        int serverPort = Integer.parseInt(args[2]);
+        AuctionHouse server = new AuctionHouse(args[0], clientPort, serverPort);
     }
 
     /**
      * holds agent id and socket for communication/bookeeping
      */
-    private class AgentProxy implements Runnable{
+    private class AgentProxy implements Runnable {
         private Socket agentSocket;
         private ObjectInputStream agentIn;
         private ObjectOutputStream agentOut;
@@ -262,18 +252,30 @@ public class AuctionHouse{
         }
     }
 
-    private void sendToBank(BankMessage bankMessage){
-        try{
-            out.writeObject(bankMessage);
-        }catch (IOException e){
+    private void sendToBank(Message message) {
+        try {
+            out.writeObject(message);
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Input for the auction from bank
+     */
+    private class AuctionIn implements Runnable {
+        private ObjectInputStream clientInput;
 
-    public static void main(String args[]) {
-        int clientPort = Integer.parseInt(args[1]);
-        int serverPort = Integer.parseInt(args[2]);
-        AuctionHouse server = new AuctionHouse(args[0],clientPort,serverPort);
+        @Override
+        public void run() {
+            System.out.println("clientIn thread started");
+            try {
+                clientInput = new ObjectInputStream(auctionClient.getInputStream());
+                input = new ObjectInputStream(auctionClient.getInputStream());
+                Message message = (Message) input.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
