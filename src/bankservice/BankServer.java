@@ -13,10 +13,11 @@ public class BankServer {
     private Bank bank;
 
     /**
+     * Create a Bank Server that accepts incoming client connections.
      *
-     * @param portNumber
-     * @param bank
-     * @throws IOException
+     * @param portNumber Integer
+     * @param bank       Bank
+     * @throws IOException ServerSocket
      */
     public BankServer(Integer portNumber, Bank bank) throws IOException {
         this.portNumber = portNumber;
@@ -31,7 +32,9 @@ public class BankServer {
         }
     }
 
-
+    /**
+     * Change the boolean variable to false, canceling the bank server loop.
+     */
     public void isNotRunning() {
         isRunning = false;
     }
