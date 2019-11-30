@@ -1,4 +1,4 @@
-package bankservice;
+package bank;
 
 import shared.NetInfo;
 
@@ -93,7 +93,9 @@ public class Bank {
      * @param amount       double
      * @return boolean
      */
-    public synchronized boolean transferFunds(UUID client, UUID auctionHouse, double amount) {
+    public synchronized boolean transferFunds(UUID client,
+                                              UUID auctionHouse,
+                                              double amount) {
         if (accounts.containsKey(client) && accounts.containsKey(auctionHouse)) {
             if (accounts.get(client).withdraw(amount)) {
                 accounts.get(auctionHouse).deposit(amount);

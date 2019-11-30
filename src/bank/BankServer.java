@@ -1,4 +1,6 @@
-package bankservice;
+package bank;
+
+import bank.service.ConnectionLoggerService;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -11,6 +13,7 @@ public class BankServer {
     private boolean isRunning;
     private List<Connection> connections;
     private Bank bank;
+    private final ConnectionLoggerService connectionLoggerService;
 
     /**
      * Create a Bank Server that accepts incoming client connections.
@@ -25,8 +28,10 @@ public class BankServer {
         serverSocket = new ServerSocket(this.portNumber);
         connections = new ArrayList<>();
         isRunning = true;
+        connectionLoggerService = ConnectionLoggerService.getInstance();
         while (isRunning) {
-            Connection connection = new Connection(serverSocket.accept(), this.bank);
+            Connection connection =
+                    new Connection(serverSocket.accept(), this.bank);
             connections.add(connection);
             System.out.println(connection.getSocket().getInetAddress());
         }

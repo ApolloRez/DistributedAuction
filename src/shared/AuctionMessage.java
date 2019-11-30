@@ -1,10 +1,10 @@
 package shared;
 
+import AuctionHouse.Item;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.UUID;
-
-import AuctionHouse.Item;
 
 /**
  * messaging system between an agent and an Auction House
@@ -82,6 +82,7 @@ public class AuctionMessage implements Serializable {
     public ArrayList getCatalogue(){
         return catalogue;
     }
+
     public Double getAmount(){
         return amount;
     }
@@ -91,5 +92,4 @@ public class AuctionMessage implements Serializable {
     public UUID getId(){
         return accountId;
     }
-
 }

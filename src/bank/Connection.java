@@ -1,5 +1,6 @@
-package bankservice;
+package bank;
 
+import bank.service.ConnectionLoggerService;
 import shared.Message;
 
 import java.io.IOException;
@@ -14,16 +15,17 @@ public class Connection implements Runnable {
     private final ObjectOutputStream objectOutputStream;
     private final Bank bank;
     private boolean running = true;
+    private final ConnectionLoggerService connectionLoggerService;
 
     /**
      * The connection object handles the communication between the bank and
      * the clients.
-     *
      * @param socket Socket
      * @param bank   Bank
      * @throws IOException
      */
     public Connection(Socket socket, Bank bank) throws IOException {
+        connectionLoggerService = ConnectionLoggerService.getInstance();
         objectInputStream = new ObjectInputStream(socket.getInputStream());
         objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
         this.socket = socket;
@@ -33,7 +35,6 @@ public class Connection implements Runnable {
 
     /**
      * Get the socket object.
-     *
      * @return Socket
      */
     public Socket getSocket() {
@@ -145,7 +146,9 @@ public class Connection implements Runnable {
                 ClassNotFoundException |
                 NullPointerException ignored) {
             try {
-                writeMessage(new Message.Builder().response(Message.Response.INVALID_PARAMETERS).send(bank.getId()));
+                writeMessage(new Message.Builder()
+                        .response(Message.Response.INVALID_PARAMETERS)
+                        .send(bank.getId()));
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -156,20 +159,22 @@ public class Connection implements Runnable {
      * Write a message to the ObjectOutputStream.
      *
      * @param message Message
-     * @throws IOException
+     * @throws IOException Cannot write to ObjectOutputStream
      */
     private void writeMessage(Message message) throws IOException {
+        connectionLoggerService.add(message);
         objectOutputStream.writeObject(message);
     }
 
     /**
      * Read a message from the ObjectInputStream and return the object.
-     *
      * @return Message
      * @throws IOException            Connection broken
      * @throws ClassNotFoundException Message class not found
      */
     private Message readMessage() throws IOException, ClassNotFoundException {
-        return (Message) objectInputStream.readObject();
+        Message message = (Message) objectInputStream.readObject();
+        connectionLoggerService.add(message);
+        return message;
     }
 }
