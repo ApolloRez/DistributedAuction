@@ -8,43 +8,40 @@ import java.util.LinkedList;
 
 public class Agent {
 
-    public boolean connectedToBank;
+
     private ServerSocket BankServer = null;
     private ServerSocket AuctionServer = null;
     private Socket client = null;
-    private double balance;
-    private int accountNumber;
+
     private ObjectInputStream bankIn;
     private ObjectOutputStream bankOut;
     public ObjectInputStream auctionIn;
     private ObjectOutputStream auctionOut;
 
+    public boolean connectedToBank;
+    private double balance;
+    private int accountNumber;
     //add a list of items the agent has won.
 
 
     public Agent(String hostName, int portNumber) {
-
-        try (Socket socket = new Socket(hostName, portNumber);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in =
-                     new BufferedReader(new InputStreamReader(socket.getInputStream()))
-        )
-        {
-            BufferedReader stdIn =
-                    new BufferedReader(new InputStreamReader(System.in));
-            String fromServer = in.readLine();
-            while(fromServer != null) {
-                System.out.println("Bank: ");
-            }
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        try {
+            client = new Socket(hostName,portNumber);
+            System.out.println("Connected");
+            bankOut = new ObjectOutputStream(client.getOutputStream());
+        } catch(IOException u) {
+            u.printStackTrace();
         }
     }
 
+    public void registerBank() {
 
-    public void connectAuctionServer(String hostName, int portNumber) throws IOException {
+
+    }
+
+
+
+    public void connectAuctionServer() throws IOException {
         try (Socket socket = new Socket(hostName, portNumber);
              auctionIn = new ObjectInputStream(socket.getOutputStream(), true));
              auctionOut = new ObjectInputStream(new InputStreamReader(socket.getInputStream()))
@@ -59,12 +56,10 @@ public class Agent {
 
     }
 
-    public boolean connectToAuctionHouse(int choice/*IP or somethin?*/) {
-        /*
-        "The agent gets a list of active auction houses from the bank.
-         In connects to an auction
-        house using the host and port information sent from the bank."
-         */
+    public boolean connectToAuctionHouse(int choice) {
+        hostName
+        try (Socket socket = new Socket(hostName, portNumber);
+
         return false;
     }
 
@@ -76,13 +71,7 @@ public class Agent {
         return null;
     }
 
-    public void contactBank(AuctionENUMs result) {
-        /*
-        if the agent win it must contact the bank to unblock and transfer the funds.
 
-        this might not be the exact best method to handle all of the results.
-         */
-    }
 
     public void registerAuctionHouse() {
 
@@ -96,8 +85,7 @@ public class Agent {
     }
 
 
-    public void registerBank() {
-    }
+
 
     public void closeAgent() {
     }
@@ -116,5 +104,8 @@ public class Agent {
     }
 
     public String getItemString() {
+    }
+
+    public String getStringOfCurrentFloor() {
     }
 }

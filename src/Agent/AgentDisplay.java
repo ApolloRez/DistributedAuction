@@ -73,18 +73,16 @@ public class AgentDisplay {
         }
     }
 
+
     private void auctionHouseMenu() {
-        System.out.println("Welcome to auction house");
-        System.out.println("Item currently up for bit:");
-        printCurrentItem();
+        System.out.println("Items currently up for bit:");
+        printCurrentItems();
 
 
     }
 
-    private void printCurrentItem() {
-        /**
-         * the agent gets a list of items to bid on from the auction house
-         */
+    private void printCurrentItems() {
+
     }
 
     private void depositMenu() {
