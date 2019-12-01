@@ -17,9 +17,13 @@ public class Item {
         return value;
     }
 
-    public void setNewValue(int value){
+    public void setNewValue(double value){
         this.value = value;
     }
+    public void newBidder(UUID bidder){
+        this.bidderId = bidder;
+    }
+
 
     public UUID getBidder(){
         return bidderId;

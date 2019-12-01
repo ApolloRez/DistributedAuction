@@ -3,6 +3,9 @@ package AuctionHouse;
 import shared.AuctionMessage;
 import shared.AuctionMessage.AMType;
 import shared.Message;
+import shared.NetInfo;
+import shared.Message.Command;
+import sun.awt.image.ImageWatched;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -10,6 +13,9 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class AuctionHouse{
     private ServerSocket server;
@@ -25,8 +31,11 @@ public class AuctionHouse{
     private AuctionHouse(String address,int clientPort, int serverPort){
         setupItemList();
             try{
+                System.out.println("Connecting to Auction House");
                 auctionClient = new Socket(address, clientPort);
+                System.out.println("Connection established");
                 server = new ServerSocket(serverPort);
+                System.out.println("Action house server started");
                 setupItemList();
                 addItems(3);
                 Thread serverThread = new Thread(new AuctionServer());
@@ -34,6 +43,17 @@ public class AuctionHouse{
                 out = new ObjectOutputStream(auctionClient.getOutputStream());
                 Thread inThread = new Thread(new AuctionIn());
                 inThread.start();
+                String ip = server.getInetAddress().getHostAddress();
+                String hostname = server.getInetAddress().getHostName();
+                int port = server.getLocalPort();
+                NetInfo serverInfo = new NetInfo(ip,hostname,port);
+                List<NetInfo> aHInfo = new LinkedList<>();
+                aHInfo.add(serverInfo);
+                Message register = new Message(new Message.Builder()
+                                   .command(Command.REGISTER_AH).netInfo(aHInfo));
+                sendToBank(register);
+
+
             } catch(IOException u){
                 u.printStackTrace();
             }
@@ -77,8 +97,7 @@ public class AuctionHouse{
         while(needed >= 0){
             String name = list.getRandomName();
             int random = new Random().nextInt(50);
-            double value = random;
-            Item item = new Item(name,value);
+            Item item = new Item(name, random);
             catalogue.add(item);
             needed--;
         }
@@ -89,7 +108,7 @@ public class AuctionHouse{
      */
     private void setupItemList(){
         int test = new Random().nextInt(20);
-        ItemList list = ItemList.createNameList("Destiny2.txt");
+        list = ItemList.createNameList("Destiny2.txt");
     }
 
     /**
@@ -129,6 +148,7 @@ public class AuctionHouse{
         private ObjectOutputStream agentOut;
         private UUID id;
         private AuctionMessage message = null;
+        private BlockingQueue<Boolean> bankSignoff= new LinkedBlockingDeque<>();
         @Override
         public void run() {
             do{
@@ -179,21 +199,48 @@ public class AuctionHouse{
             Item bidItem = message.getItem();
             UUID bidderId = message.getId();
             double amount = message.getAmount();
+            int stillInCatalogue = catalogue.indexOf(bidItem);
+            if(stillInCatalogue == -1){
+                reject();
+                return;
+            }
             if(amount > bidItem.value()){
-
+                Message requestHold = new Message(new Message.Builder()
+                                      .command(Command.HOLD).accountId(bidderId));
+                try{
+                    out.writeObject(requestHold);
+                    Boolean success = bankSignoff.take();
+                    if(success){
+                        bidItem.setNewValue(amount);
+                        UUID oldBidder = bidItem.getBidder();
+                        release(oldBidder);
+                        bidItem.newBidder(bidderId);
+                        accept();
+                    }else{
+                       reject();
+                    }
+                }catch (IOException | InterruptedException e){
+                    e.printStackTrace();
+                }
             }else{
                 reject();
             }
         }
-
+        private synchronized void release(UUID id){
+            Message release = new Message(new Message.Builder()
+                    .command(Command.RELEASE_HOLD)
+                    .accountId(id));
+            sendToBank(release);
+        }
         private void reject(){
             AuctionMessage reject = AuctionMessage.Builder.newB().
                     type(AMType.REJECTION).build();
             sendOut(reject);
         }
-
-        private void holdFunds(){
-            
+        private void accept(){
+            AuctionMessage accept = AuctionMessage.Builder.newB()
+                                    .type(AMType.ACCEPTANCE).build();
+            sendOut(accept);
         }
 
         private void sendOut(AuctionMessage message){
@@ -252,7 +299,7 @@ public class AuctionHouse{
         }
     }
 
-    private void sendToBank(Message message) {
+    private synchronized void sendToBank(Message message) {
         try {
             out.writeObject(message);
         } catch (IOException e) {
@@ -264,15 +311,17 @@ public class AuctionHouse{
      * Input for the auction from bank
      */
     private class AuctionIn implements Runnable {
-        private ObjectInputStream clientInput;
 
         @Override
         public void run() {
             System.out.println("clientIn thread started");
             try {
-                clientInput = new ObjectInputStream(auctionClient.getInputStream());
                 input = new ObjectInputStream(auctionClient.getInputStream());
-                Message message = (Message) input.readObject();
+                /*Message message = (Message) input.readObject();
+                Enum type = message.getCommand();
+                if(type == Command.HOLD){
+
+                }*/
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
