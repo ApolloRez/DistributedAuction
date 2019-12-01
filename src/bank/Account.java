@@ -1,4 +1,4 @@
-package bankservice;
+package bank;
 import java.util.UUID;
 
 /**

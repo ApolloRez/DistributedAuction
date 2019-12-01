@@ -1,4 +1,4 @@
-package bankservice;
+package bank;
 
 import shared.NetInfo;
 
@@ -25,6 +25,7 @@ public class Bank {
 
     /**
      * Get the id of this bank.
+     *
      * @return {@link UUID}
      */
     public UUID getId() {
@@ -45,6 +46,7 @@ public class Bank {
 
     /**
      * Register a client account with this bank and return the id of the account.
+     *
      * @return UUID
      */
     public UUID registerClient() {
@@ -75,17 +77,11 @@ public class Bank {
      * Deposit an amount of funds into the said account, if the account does
      * not exist in the data structure, return false.
      *
-     * @param accountID UUID
-     * @param amount    double
-     * @return boolean deposit was successful
+     * @param targetId UUID
+     * @param amount   double
      */
-    public synchronized boolean depositFunds(UUID accountID, double amount) {
-        if (accounts.containsKey(accountID)) {
-            accounts.get(accountID).deposit(amount);
-            return true;
-        } else {
-            return false;
-        }
+    public synchronized void depositFunds(UUID targetId, double amount) {
+        accounts.get(targetId).deposit(amount);
     }
 
     /**
@@ -97,7 +93,9 @@ public class Bank {
      * @param amount       double
      * @return boolean
      */
-    public synchronized boolean transferFunds(UUID client, UUID auctionHouse, double amount) {
+    public synchronized boolean transferFunds(UUID client,
+                                              UUID auctionHouse,
+                                              double amount) {
         if (accounts.containsKey(client) && accounts.containsKey(auctionHouse)) {
             if (accounts.get(client).withdraw(amount)) {
                 accounts.get(auctionHouse).deposit(amount);
@@ -111,22 +109,29 @@ public class Bank {
     }
 
     /**
-     * Given a accountId accountId, place a hold on the funds of the given amount.
+     * Given a targetId targetId, place a hold on the funds of the given amount.
      *
-     * @param accountId UUID
-     * @param amount double
+     * @param targetId UUID
+     * @param amount   double
      * @return boolean
      */
-    public synchronized boolean holdFunds(UUID accountId, double amount) {
-        if (accounts.containsKey(accountId)) {
-            return accounts.get(accountId).holdFunds(amount);
+    public synchronized boolean holdFunds(UUID targetId, double amount) {
+        if (accounts.containsKey(targetId)) {
+            return accounts.get(targetId).holdFunds(amount);
         }
         return false;
     }
 
-    public synchronized boolean releaseFunds(UUID accountId, double amount) {
-        if (accounts.containsKey(accountId)) {
-            return accounts.get(accountId).releaseFunds(amount);
+    /**
+     * Release the specified amount of funds from the held funds.
+     *
+     * @param targetId UUID
+     * @param amount   double
+     * @return boolean
+     */
+    public synchronized boolean releaseFunds(UUID targetId, double amount) {
+        if (accounts.containsKey(targetId)) {
+            return accounts.get(targetId).releaseFunds(amount);
         }
         return false;
     }
@@ -134,10 +139,14 @@ public class Bank {
     /**
      * Return the available balance of said account.
      *
-     * @param accountId UUID
+     * @param targetId UUID
      * @return double
      */
-    public double getAccountFunds(UUID accountId) {
-        return accounts.get(accountId).getAvailableBalance();
+    public synchronized double getAccountFunds(UUID targetId) {
+        return accounts.get(targetId).getAvailableBalance();
+    }
+
+    public synchronized double getHeldFunds(UUID targetId) {
+        return accounts.get(targetId).getHeldFunds();
     }
 }
