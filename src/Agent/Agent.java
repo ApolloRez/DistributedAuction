@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.LinkedList;
 
 public class Agent {
 
@@ -58,12 +59,13 @@ public class Agent {
 
     }
 
-    public void connectToAuctionHouse(/*IP or somethin?*/) {
+    public boolean connectToAuctionHouse(int choice/*IP or somethin?*/) {
         /*
         "The agent gets a list of active auction houses from the bank.
          In connects to an auction
         house using the host and port information sent from the bank."
          */
+        return false;
     }
 
     public AuctionENUMs makeBid(/*Item to bid on and price?*/) {
@@ -101,5 +103,18 @@ public class Agent {
     }
 
     public void bankDeposit(int deposit) {
+    }
+
+    public LinkedList<String> getAuctionList() {
+        return null;
+    }
+
+    public double getBalance() {
+    }
+
+    public boolean idToString() {
+    }
+
+    public String getItemString() {
     }
 }
