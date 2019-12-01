@@ -7,6 +7,7 @@ import shared.NetInfo;
 import shared.Message.Command;
 import sun.awt.image.ImageWatched;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -41,8 +42,7 @@ public class AuctionHouse{
                 Thread serverThread = new Thread(new AuctionServer());
                 serverThread.start();
                 out = new ObjectOutputStream(auctionClient.getOutputStream());
-                Thread inThread = new Thread(new AuctionIn());
-                inThread.start();
+
                 String ip = server.getInetAddress().getHostAddress();
                 String hostname = server.getInetAddress().getHostName();
                 int port = server.getLocalPort();
@@ -50,8 +50,12 @@ public class AuctionHouse{
                 List<NetInfo> aHInfo = new LinkedList<>();
                 aHInfo.add(serverInfo);
                 Message register = new Message(new Message.Builder()
-                                   .command(Command.REGISTER_AH).netInfo(aHInfo));
+                        .command(Command.REGISTER_AH).netInfo(aHInfo));
                 sendToBank(register);
+
+
+                Thread inThread = new Thread(new AuctionIn());
+                inThread.start();
 
 
             } catch(IOException u){
@@ -317,14 +321,27 @@ public class AuctionHouse{
             System.out.println("clientIn thread started");
             try {
                 input = new ObjectInputStream(auctionClient.getInputStream());
-                /*Message message = (Message) input.readObject();
-                Enum type = message.getCommand();
+                while(run){
+                    Message message = (Message) input.readObject();
+                    System.out.println(message);
+                    processMessage(message);
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch(IOException e){
+                try {
+                    input.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+
+        private void processMessage(Message message){
+            Enum type = message.getCommand();
                 if(type == Command.HOLD){
 
-                }*/
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            }
+                }
         }
     }
 }
