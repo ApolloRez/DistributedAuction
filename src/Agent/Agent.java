@@ -1,12 +1,14 @@
 package Agent;
 
 import shared.Message;
+import shared.NetInfo;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
 
 public class Agent {
@@ -28,6 +30,8 @@ public class Agent {
     //add a list of items the agent has won.
     private String auctionHouse;
     private int auctionPort;
+    private List<NetInfo> auctionHouses;
+
 
 
     public Agent(String hostName, int portNumber) {
@@ -42,12 +46,21 @@ public class Agent {
 
     public void registerBank() throws IOException {
         // create a message and send it to the bank using the message class...
-    Message.Builder register = new Message.Builder();
-    register.command(Message.Command.REGISTER_CLIENT);
-    Message registerMessage = new Message(register);
-    bankOut.writeObject(registerMessage);
-    new setBankIn();
+        Message message = new Message.Builder()
+                .command(Message.Command.REGISTER_CLIENT)
+                .send(null);
+        sendToBank(message);
+        new setBankIn();
     // need a new thread here right?
+    }
+
+    private void sendToBank(Message message) throws IOException {
+        try {
+            bankOut.writeObject(message);
+
+        } catch(IOException e) {
+        e.printStackTrace();
+        }
     }
 
     public class setBankIn implements Runnable{
@@ -58,10 +71,32 @@ public class Agent {
             try {
                 bankIn = new ObjectInputStream(bankClient.getInputStream());
                 message = (Message) bankIn.readObject(); //?
+                processBankMessage(message);
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
+
+        private void processBankMessage(Message message) {
+            if (message.getAccountId()!=null && accountNumber==null) {
+                accountNumber = message.getAccountId();
+            }
+            if (message.getResponse() == Message.Response.SUCCESS) {
+                AgentDisplay.printSuccess();
+            }
+            if (message.getNetInfo()!=null) {
+                auctionHouses = message.getNetInfo();
+            }
+            if (message.getAmount() != null) {
+                balance = message.getAmount();
+                printAgentBalance();
+            }
+        }
+
+        private void printAgentBalance() {
+
+        }
+
         // need too confer with magnus about how to use message to read in the UUID
 
         //add methods for different bank messages right?
@@ -69,30 +104,16 @@ public class Agent {
 
 
 
-    public void connectAuctionServer() throws IOException {
-        try (Socket socket = new Socket(hostName, portNumber);
-             auctionIn = new ObjectInputStream(socket.getOutputStream(), true));
-             auctionOut = new ObjectInputStream(new InputStreamReader(socket.getInputStream()))
-        )
-        {
-            registerAuctionHouse();
-        }
-             // use object output stream
-        {
-
-        }
-
-    }
 
     public boolean connectToAuctionHouse(int choice) throws IOException {
         getAuctionNetInfo(choice);
         try {
             auctionClient = new Socket(auctionHouse,auctionPort);
+            //auctionServer = new ServerSocket(auctionServerPort); // not sure what to init this as
+            auctionOut = new ObjectOutputStream(auctionClient.getOutputStream());
+            registerAuctionHouse();
 
-            auctionServer = new ServerSocket(auctionServerPort);
-
-
-
+            return true;
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -107,13 +128,16 @@ public class Agent {
         /*
         make a bid on an item at the auction house and return
         one of the ENUM regarding the result.
-         */
+         */            System.out.println("Current Balance: "+agent.getBalance());
+
         return null;
     }
 
 
 
     public void registerAuctionHouse() {
+        AuctionMessage message = new AuctionMessage();
+        auctionOut.writeObject()
 
     }
 
@@ -130,14 +154,27 @@ public class Agent {
     public void closeAgent() {
     }
 
-    public void bankDeposit(int deposit) {
+    public void bankDeposit(double deposit) throws IOException {
+        Message message = new Message.Builder()
+                .command(Message.Command.DEPOSIT)
+                .amount(deposit)
+                .send(accountNumber);
+        sendToBank(message);
     }
 
     public LinkedList<String> getAuctionList() {
         return null;
     }
 
+    public void updateBalance() throws IOException {
+        Message message = new Message.Builder()
+                .command(Message.Command.GET_AVAILABLE)
+                .send(accountNumber);
+        sendToBank(message);
+    }
+
     public double getBalance() {
+        return balance;
     }
 
     public boolean idToString() {

@@ -1,5 +1,6 @@
 package Agent;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Scanner;
 
@@ -12,7 +13,15 @@ public class AgentDisplay {
         scanner = new Scanner(System.in);
     }
 
-    public void startUp() {
+    public static void printSuccess() {
+        System.out.println("Successful");
+    }
+
+    public void printBalance() {
+        System.out.println("Current Balance: " + agent.getBalance());
+    }
+
+    public void startUp() throws IOException {
         System.out.println("[Connect]/[Quit]");
         String nextLine = scanner.nextLine();
         if (nextLine == "Connect") {
@@ -31,7 +40,7 @@ public class AgentDisplay {
         }
     }
 
-    private void bankMenu() {
+    private void bankMenu() throws IOException {
         System.out.println("[Deposit]/[AuctionList]/[Balance]/[Agent]");
         String nextLine = scanner.nextLine();
         if (nextLine == "Deposit") {
@@ -39,7 +48,7 @@ public class AgentDisplay {
         } else if (nextLine == "AuctionList") {
             auctionHouseList();
         } else if (nextLine == "Balance") {
-            System.out.println("Current Balance: "+agent.getBalance());
+            agent.updateBalance();
             bankMenu();
         } else if (nextLine == "Agent") {
             System.out.println(agent.idToString());
@@ -58,7 +67,7 @@ public class AgentDisplay {
 
 
 
-    private void auctionHouseList() {
+    private void auctionHouseList() throws IOException {
         LinkedList<String> auctionHouses = agent.getAuctionList();
         System.out.println("Auction Houses:");
         for (int i=1; i <= auctionHouses.size(); i++) {
