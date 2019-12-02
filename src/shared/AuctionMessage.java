@@ -19,12 +19,12 @@ public class AuctionMessage implements Serializable {
 
     public enum AMType{
         BID,        //client wants to bid on item
-        BID_NOTIF,  //auction lets agent know they won or someone else bid
         REGISTER,    //client first contacts Auction house/ Auction responds
         ACCEPTANCE, //Auction lets agent know their bid was accepted
         REJECTION,  //Auction lets agent know their bid was denied
         OUTBID,     //Auction lets agent know their bid was out bidded
-        WINNER      //Auction lets agent know they won bid
+        WINNER,     //Auction lets agent know they won bid
+        UPDATE      //Auction sends updated catalogue to client
     }
     public static class Builder {
         private String notification = null;
