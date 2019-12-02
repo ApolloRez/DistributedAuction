@@ -1,6 +1,5 @@
 package bank;
 
-import javafx.collections.FXCollections;
 import shared.NetInfo;
 
 import java.util.*;
@@ -20,7 +19,7 @@ public class Bank {
      * organize the banks clients.
      */
     public Bank() {
-        auctionHouseNetInfo = FXCollections.observableArrayList();
+        auctionHouseNetInfo = new ArrayList<>();
         accounts = new HashMap<>();
         id = UUID.randomUUID();
     }

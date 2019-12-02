@@ -6,9 +6,7 @@ import shared.Message;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 public class Connection implements Runnable {
 
@@ -59,6 +57,8 @@ public class Connection implements Runnable {
     @Override
     public void run() {
         try {
+            connectionLoggerService.add("Connection Join: "
+                    + socket.getInetAddress().getHostName());
             Message message = readMessage();
             if (message.getCommand() == Message.Command.REGISTER_CLIENT) {
                 writeMessage(new Message.Builder()
@@ -79,6 +79,8 @@ public class Connection implements Runnable {
             while (running) {
                 message = readMessage();
                 switch (message.getCommand()) {
+                    // UUID - senderID
+                    // double - amount
                     case DEPOSIT: {
                         bank.depositFunds(message.getSender(),
                                 message.getAmount());
@@ -89,22 +91,28 @@ public class Connection implements Runnable {
                                 .send(bank.getId()));
                         break;
                     }
+                    // UUID - accountId
+                    // double - amount
                     case HOLD: {
                         if (bank.holdFunds(message.getAccountId(),
                                 message.getAmount())) {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.SUCCESS)
                                     .command(Message.Command.HOLD)
+                                    .amount(message.getAmount())
                                     .accountId(message.getAccountId())
                                     .send(bank.getId()));
                         } else {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.INSUFFICIENT_FUNDS)
+                                    .command(Message.Command.HOLD)
                                     .accountId(message.getAccountId())
                                     .send(bank.getId()));
                         }
                         break;
                     }
+                    // UUID - accountId
+                    // double - amount
                     case RELEASE_HOLD: {
                         if (bank.releaseFunds(message.getAccountId(),
                                 message.getAmount())) {
@@ -116,24 +124,33 @@ public class Connection implements Runnable {
                         } else {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.INSUFFICIENT_FUNDS)
+                                    .command(Message.Command.RELEASE_HOLD)
+                                    .amount(message.getAmount())
                                     .send(bank.getId()));
                         }
                         break;
                     }
+                    // UUID - senderId
+                    // UUID - accountId
+                    // double - amount
                     case TRANSFER: {
                         if (bank.transferFunds(message.getSender(),
                                 message.getAccountId(), message.getAmount())) {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.SUCCESS)
                                     .command(Message.Command.TRANSFER)
+                                    .amount(message.getAmount())
                                     .send(bank.getId()));
                         } else {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.ERROR)
+                                    .command(Message.Command.TRANSFER)
+                                    .amount(message.getAmount())
                                     .send(bank.getId()));
                         }
                         break;
                     }
+                    // UUID - senderId
                     case GET_AVAILABLE: {
                         writeMessage(new Message.Builder()
                                 .amount(bank.getAccountFunds(message.getSender()))
@@ -147,20 +164,26 @@ public class Connection implements Runnable {
                                 .send(bank.getId()));
                         break;
                     }
+                    // UUID - senderId
                     case GET_RESERVED: {
                         writeMessage(new Message.Builder()
                                 .amount(bank.getHeldFunds(message.getSender()))
                                 .send(bank.getId()));
                         break;
                     }
+                    // UUID - sender
+                    // List<NetInfo> netInfo
                     case DEREGISTER_AH: {
                         bank.deRegisterAuctionHouse(message.getSender(),
                                 message.getNetInfo().get(0));
                         this.closeThread();
+                        break;
                     }
+                    // UUID - sender
                     case DEREGISTER_CLIENT: {
                         bank.deRegisterClient(message.getSender());
                         this.closeThread();
+                        break;
                     }
                 }
             }
@@ -175,11 +198,8 @@ public class Connection implements Runnable {
             }
         } catch (IOException e) {
             bank.auctionHouseConnDrop(socket.getInetAddress().getHostAddress());
-            try {
-                connectionLoggerService.add("Connection dropped : "
-                        + InetAddress.getLocalHost().getHostName());
-            } catch (UnknownHostException ignored) {
-            }
+            connectionLoggerService.add("Connection dropped : "
+                    + socket.getInetAddress().getHostName());
             this.closeThread();
         }
     }
@@ -191,8 +211,8 @@ public class Connection implements Runnable {
      * @throws IOException Cannot write to ObjectOutputStream
      */
     private void writeMessage(Message message) throws IOException {
-        objectOutputStream.writeObject(message);
         connectionLoggerService.add("Bank : " + message.toString());
+        objectOutputStream.writeObject(message);
     }
 
     /**
