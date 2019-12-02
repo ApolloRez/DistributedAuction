@@ -6,9 +6,7 @@ import shared.Message;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
 
 public class Connection implements Runnable {
 
@@ -59,6 +57,8 @@ public class Connection implements Runnable {
     @Override
     public void run() {
         try {
+            connectionLoggerService.add("Connection Join: "
+                    + socket.getInetAddress().getHostName());
             Message message = readMessage();
             if (message.getCommand() == Message.Command.REGISTER_CLIENT) {
                 writeMessage(new Message.Builder()
@@ -130,8 +130,8 @@ public class Connection implements Runnable {
                         }
                         break;
                     }
-                    //UUID - senderId
-                    //UUID - accountId
+                    // UUID - senderId
+                    // UUID - accountId
                     // double - amount
                     case TRANSFER: {
                         if (bank.transferFunds(message.getSender(),
@@ -179,7 +179,7 @@ public class Connection implements Runnable {
                         this.closeThread();
                         break;
                     }
-                    //UUID - sender
+                    // UUID - sender
                     case DEREGISTER_CLIENT: {
                         bank.deRegisterClient(message.getSender());
                         this.closeThread();
@@ -198,11 +198,8 @@ public class Connection implements Runnable {
             }
         } catch (IOException e) {
             bank.auctionHouseConnDrop(socket.getInetAddress().getHostAddress());
-            try {
-                connectionLoggerService.add("Connection dropped : "
-                        + InetAddress.getLocalHost().getHostName());
-            } catch (UnknownHostException ignored) {
-            }
+            connectionLoggerService.add("Connection dropped : "
+                    + socket.getInetAddress().getHostName());
             this.closeThread();
         }
     }
