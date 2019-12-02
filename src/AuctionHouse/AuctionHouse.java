@@ -3,15 +3,20 @@ package AuctionHouse;
 import shared.AuctionMessage;
 import shared.AuctionMessage.AMType;
 import shared.Message;
-import shared.Message.Command;
 import shared.NetInfo;
+import shared.Message.Command;
+import sun.awt.image.ImageWatched;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -25,6 +30,7 @@ public class AuctionHouse{
     private Set<AgentProxy> activeAgents = new HashSet<>();
     private double balance = 0;
     private boolean run = true;
+    private UUID auctionId;
 
     private AuctionHouse(String address,int clientPort, int serverPort){
         setupItemList();
@@ -36,42 +42,32 @@ public class AuctionHouse{
                 System.out.println("Action house server started");
                 setupItemList();
                 addItems(3);
+                System.out.println(catalogue.size() + " items created");
                 Thread serverThread = new Thread(new AuctionServer());
                 serverThread.start();
                 out = new ObjectOutputStream(auctionClient.getOutputStream());
-                Thread inThread = new Thread(new AuctionIn());
-                inThread.start();
-                String ip = server.getInetAddress().getHostAddress();
-                String hostname = server.getInetAddress().getHostName();
+
+                String ip;
+                try(final DatagramSocket socket = new DatagramSocket()){
+                    socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+                    ip = socket.getLocalAddress().getHostAddress();
+                }
                 int port = server.getLocalPort();
-                NetInfo serverInfo = new NetInfo(ip, hostname, port);
+                NetInfo serverInfo = new NetInfo(ip,port);
                 List<NetInfo> aHInfo = new LinkedList<>();
                 aHInfo.add(serverInfo);
-                Message register = new Message.Builder()
-                        .command(Command.REGISTER_AH)
+                Message register = new Message.Builder().command(Command.REGISTER_AH)
                         .netInfo(aHInfo).send(null);
                 sendToBank(register);
 
 
+                Thread inThread = new Thread(new AuctionIn());
+                inThread.start();
+
+                //shutdown();
             } catch(IOException u){
                 u.printStackTrace();
             }
-            /*String line = "";
-            System.out.println("you should not be here yet");
-            boolean done = false;
-            while (!done) {
-                try {
-                    line = input.readLine();
-                    if(line.equals("over")){
-                        done = true;
-                    }
-                    assert out != null;
-                    out.writeObject(line);
-                }
-                catch(IOException i) {
-                    System.out.println(i);
-                }
-            }*/
     }
 
     private void shutdown(){
@@ -162,10 +158,12 @@ public class AuctionHouse{
         private void process(AuctionMessage message){
             AMType type = message.getType();
             switch(type){
-                case BID:      bid(message);
-                               break;
-                case REGISTER: register(message);
-                               break;
+                case BID:
+                    bid(message);
+                    break;
+                case REGISTER:
+                    register(message);
+                    break;
                 default: System.out.println("uh oh");
             }
         }
@@ -176,8 +174,8 @@ public class AuctionHouse{
                 countdown.start();
             }
             activeAgents.add(this);
-            AuctionMessage reply = AuctionMessage.Builder.newB()
-            .type(AMType.ACCEPTANCE).list(catalogue).build();
+            AuctionMessage reply =AuctionMessage.Builder.newB()
+            .type(AMType.REGISTER).list(catalogue).build();
             sendOut(reply);
         }
 
@@ -203,19 +201,22 @@ public class AuctionHouse{
                 reject();
                 return;
             }
-            if(amount > bidItem.value()) {
+            double currentValue = bidItem.value();
+            if(amount > currentValue){
                 Message requestHold = new Message.Builder()
-                        .command(Command.HOLD).accountId(bidderId).send(null);
-                try {
+                        .command(Command.HOLD)
+                        .accountId(bidderId).amount(currentValue).send(this.id);
+
+                try{
                     out.writeObject(requestHold);
                     Boolean success = bankSignoff.take();
-                    if (success) {
-                        bidItem.setNewValue(amount);
+                    if(success){
                         UUID oldBidder = bidItem.getBidder();
-                        release(oldBidder);
+                        release(oldBidder,currentValue);
+                        bidItem.setNewValue(amount);
                         bidItem.newBidder(bidderId);
                         accept();
-                    } else {
+                    }else{
                        reject();
                     }
                 }catch (IOException | InterruptedException e){
@@ -225,11 +226,11 @@ public class AuctionHouse{
                 reject();
             }
         }
-        private synchronized void release(UUID id){
+
+        private synchronized void release(UUID id, Double amount){
             Message release = new Message.Builder()
                     .command(Command.RELEASE_HOLD)
-                    .accountId(id)
-                    .send(null);
+                    .accountId(id).amount(amount).send(this.id);
             sendToBank(release);
         }
         private void reject(){
@@ -317,14 +318,70 @@ public class AuctionHouse{
             System.out.println("clientIn thread started");
             try {
                 input = new ObjectInputStream(auctionClient.getInputStream());
-                /*Message message = (Message) input.readObject();
-                Enum type = message.getCommand();
-                if(type == Command.HOLD){
-
-                }*/
-            } catch (IOException e) {
+                while(run){
+                    Message message = (Message) input.readObject();
+                    System.out.println(message);
+                    processMessage(message);
+                }
+            } catch (ClassNotFoundException e) {
                 e.printStackTrace();
+            } catch(IOException e){
+                try {
+                    input.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
             }
         }
+
+        private void processMessage(Message message){
+            Command type = message.getCommand();
+            switch(type){
+                case HOLD:
+                    hold(message);
+                    break;
+                case RELEASE_HOLD:
+                    break;
+                case REGISTER_AH:
+                    registered(message);
+                    break;
+                default: System.out.println("uh oh");
+            }
+        }
+        private void hold(Message message){
+            UUID bidder = message.getAccountId();
+            Message.Response response = message.getResponse();
+            AgentProxy temp = search(bidder);
+            if(temp != null){
+                if(response == Message.Response.SUCCESS){
+                    try{
+                        temp.bankSignoff.put(true);
+                    }catch (InterruptedException e){
+                        e.printStackTrace();
+                    }
+                }else if(response == Message.Response.INSUFFICIENT_FUNDS){
+                    try{
+                        temp.bankSignoff.put(false);
+                    }catch (InterruptedException e){
+                        e.printStackTrace();
+                    }
+                }
+            }else{
+                System.out.println("Not Good");
+            }
+        }
+
+        private void registered(Message message){
+            auctionId = message.getAccountId();
+            System.out.println("bank registration successful:"+auctionId);
+        }
+    }
+    private AgentProxy search(UUID id){
+        for(AgentProxy agent: activeAgents){
+            if(agent.id == id){
+                return agent;
+            }
+        }
+        return null;
     }
 }

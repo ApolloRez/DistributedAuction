@@ -7,15 +7,13 @@ import java.io.Serializable;
  */
 public class NetInfo implements Serializable {
     private String ip;
-    private String hostname;
     private int port;
 
     public NetInfo(){
 
     }
-    public NetInfo(String ip, String hostname,int port){
+    public NetInfo(String ip,int port){
         this.ip = ip;
-        this.hostname = hostname;
         this.port = port;
     }
     public void setPort(int port){
@@ -26,16 +24,8 @@ public class NetInfo implements Serializable {
         this.ip = ip;
     }
 
-    public void setHostname(String hostname){
-        this.hostname = hostname;
-    }
-
     public String getIp(){
         return ip;
-    }
-
-    public String getHostname(){
-        return hostname;
     }
 
     public int getPort(){
@@ -46,7 +36,6 @@ public class NetInfo implements Serializable {
     public String toString(){
         String main = "";
         main = main.concat(ip+"\n");
-        main = main.concat(hostname+"\n");
         main = main.concat(port+"\n");
         return main;
     }
