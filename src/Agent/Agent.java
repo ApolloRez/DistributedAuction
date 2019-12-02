@@ -162,23 +162,33 @@ public class Agent {
                 if (message.getNetInfo() != null) {
                     auctionHouses = message.getNetInfo();
                 }
-                switch (message.getResponse()) {
-                    case SUCCESS: {
-                        connectedToBank = true;
+                switch (message.getCommand()) {
+                    case REGISTER_CLIENT: {
                         accountNumber = message.getAccountId();
-                        balance = message.getAmount();
+                        System.out.println("got it");
+                    }
+                }
+                if (message.getResponse() != null) {
 
-                    }
-                    case ERROR: {
-                        System.out.println("Something has gone terribly wrong the " +
-                                "bank has made a large error in your favor");
+                    switch (message.getResponse()) {
+                        case SUCCESS: {
 
-                    }
-                    case INSUFFICIENT_FUNDS: {
-                        System.out.println("Insufficient funds");
-                    }
-                    case INVALID_PARAMETERS: {
-                        System.out.println("Invalid Parameters, check the code or the input?");
+                            connectedToBank = true;
+                            accountNumber = message.getAccountId();
+                            //balance = message.getAmount();
+
+                        }
+                        case ERROR: {
+                            System.out.println("Something has gone terribly wrong the " +
+                                    "bank has made a large error in your favor");
+
+                        }
+                        case INSUFFICIENT_FUNDS: {
+                            System.out.println("Insufficient funds");
+                        }
+                        case INVALID_PARAMETERS: {
+                            System.out.println("Invalid Parameters, check the code or the input?");
+                        }
                     }
                 }
             }

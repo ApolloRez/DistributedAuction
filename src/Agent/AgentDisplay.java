@@ -33,19 +33,22 @@ public class AgentDisplay {
     public void startUp() throws IOException, InterruptedException {
         System.out.println("[Connect]/[Quit]");
         String nextLine = scanner.nextLine();
-        if (nextLine == "Connect") {
+        System.out.println(nextLine);
+        if (nextLine.equals("Connect")) {
             System.out.println("Attempting to Connect?");
             agent.registerBank();
            // wait(); ?
+            agent.connectedToBank = true;
             if (agent.connectedToBank) {
                 bankMenu();
             } else {
                 System.out.println("failed to connect please try again");
                 startUp();
             }
-        } else if (nextLine == "Quit") {
+        } else if (nextLine.equals("Quit")) {
             agent.closeAgent();
         } else {
+            System.out.println("goofing");
             startUp();
         }
     }
@@ -54,14 +57,14 @@ public class AgentDisplay {
         System.out.println("[Deposit]/[AuctionList]/[Balance]/[Agent]");
         String nextLine = scanner.nextLine();
         agent.updateBalance();
-        if (nextLine == "Deposit") {
+        if (nextLine.equals("Deposit")) {
             depositMenu();
-        } else if (nextLine == "AuctionList") {
+        } else if (nextLine.equals("AuctionList")) {
             auctionHouseList();
-        } else if (nextLine == "Balance") {
+        } else if (nextLine.equals("Balance")) {
             printBalance();
             bankMenu();
-        } else if (nextLine == "Agent") {
+        } else if (nextLine.equals("Agent")) {
             System.out.println(agent.idToString());
             System.out.println("Won Items:");
             for(Item item: agent.getWonItems()) {
@@ -87,7 +90,7 @@ public class AgentDisplay {
         System.out.println("Auction Houses:");
         printBalance();
         int goBack = auctionHouses.size()+1;
-        for (int i=1; i <= auctionHouses.size(); i++) {
+        for (int i=0; i < auctionHouses.size(); i++) {
             System.out.println("["+i+"] " + auctionHouses.get(i).toString());
         }
         System.out.println("["+goBack+"] go back");
