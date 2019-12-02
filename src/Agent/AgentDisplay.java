@@ -1,7 +1,10 @@
 package Agent;
 
+import shared.NetInfo;
+
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 
 public class AgentDisplay {
@@ -43,12 +46,13 @@ public class AgentDisplay {
     private void bankMenu() throws IOException {
         System.out.println("[Deposit]/[AuctionList]/[Balance]/[Agent]");
         String nextLine = scanner.nextLine();
+        agent.updateBalance();
         if (nextLine == "Deposit") {
             depositMenu();
         } else if (nextLine == "AuctionList") {
             auctionHouseList();
         } else if (nextLine == "Balance") {
-            agent.updateBalance();
+            printBalance();
             bankMenu();
         } else if (nextLine == "Agent") {
             System.out.println(agent.idToString());
@@ -68,13 +72,17 @@ public class AgentDisplay {
 
 
     private void auctionHouseList() throws IOException {
-        LinkedList<String> auctionHouses = agent.getAuctionList();
+        List<NetInfo> auctionHouses = agent.getAuctionHouses();
         System.out.println("Auction Houses:");
+        int goBack = auctionHouses.size()+1;
         for (int i=1; i <= auctionHouses.size(); i++) {
-            System.out.println("["+i+"] " + auctionHouses.get(i));
+            System.out.println("["+i+"] " + auctionHouses.get(i).toString());
         }
+        System.out.println("["+goBack+"] go back");
         int choice = scanner.nextInt();
-        if (agent.connectToAuctionHouse(choice)) {
+        if (choice == goBack) {
+            bankMenu();
+        } else if (agent.connectToAuctionHouse(choice)) {
             auctionHouseMenu();
         } else {
             System.out.println("error in connecting to auction house");
@@ -86,6 +94,7 @@ public class AgentDisplay {
     private void auctionHouseMenu() {
         System.out.println("Items currently up for bit:");
         printCurrentItems();
+ //TODO this spot right here
 
 
     }
@@ -94,7 +103,7 @@ public class AgentDisplay {
 
     }
 
-    private void depositMenu() {
+    private void depositMenu() throws IOException {
         System.out.println("How much would you like to deposit? [1-1000]/[Back]");
         String deposit = scanner.nextLine();
         Integer depositAmount = Integer.parseInt(deposit);

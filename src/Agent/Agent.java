@@ -1,5 +1,7 @@
 package Agent;
 
+import AuctionHouse.Item;
+import shared.AuctionMessage;
 import shared.Message;
 import shared.NetInfo;
 
@@ -7,6 +9,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +34,8 @@ public class Agent {
     private String auctionHouse;
     private int auctionPort;
     private List<NetInfo> auctionHouses;
+    private ArrayList<Item> catalouge;
+    private boolean activeBid;
 
 
 
@@ -77,6 +82,7 @@ public class Agent {
             }
         }
 
+        /*
         private void processBankMessage(Message message) {
             if (message.getAccountId()!=null && accountNumber==null) {
                 accountNumber = message.getAccountId();
@@ -89,10 +95,26 @@ public class Agent {
             }
             if (message.getAmount() != null) {
                 balance = message.getAmount();
-                printAgentBalance();
             }
         }
+*/
 
+        private void processBankMessage(Message message) {
+            switch (message.getResponse()) {
+                case SUCCESS: {
+
+                }
+                case ERROR: {
+
+                }
+                case INSUFFICIENT_FUNDS: {
+
+                }
+                case INVALID_PARAMETERS: {
+
+                }
+            }
+        }
         private void printAgentBalance() {
 
         }
@@ -112,7 +134,6 @@ public class Agent {
             //auctionServer = new ServerSocket(auctionServerPort); // not sure what to init this as
             auctionOut = new ObjectOutputStream(auctionClient.getOutputStream());
             registerAuctionHouse();
-
             return true;
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -121,29 +142,48 @@ public class Agent {
         }
     }
 
-    private void getAuctionNetInfo(int choice) {
+    public class setAuctionIn implements Runnable {
+        public AuctionMessage message;
+
+        @Override
+        public void run() {
+            System.out.println("listening to AH");
+            try {
+                auctionIn = new ObjectInputStream(auctionClient.getInputStream());
+                message = (AuctionMessage) auctionIn.readObject(); //?
+                processAuctionMessage(message);
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
+        private void processAuctionMessage(AuctionMessage message) {
+            if (message.getType()==AuctionMessage.AMType.ACCEPTANCE) {
+                activeBid = true;
+            }
+
+        }
     }
 
-    public AuctionENUMs makeBid(/*Item to bid on and price?*/) {
-        /*
-        make a bid on an item at the auction house and return
-        one of the ENUM regarding the result.
-         */            System.out.println("Current Balance: "+agent.getBalance());
+        private void getAuctionNetInfo(int choice) {
+        auctionHouse = auctionHouses.get(choice).getHostname();
+        auctionPort = auctionHouses.get(choice).getPort();
 
-        return null;
     }
 
 
 
-    public void registerAuctionHouse() {
-        AuctionMessage message = new AuctionMessage();
-        auctionOut.writeObject()
 
+    public void registerAuctionHouse() throws IOException {
+        AuctionMessage message = AuctionMessage.Builder.newB()
+                .type(AuctionMessage.AMType.REGISTER).id(accountNumber).build();
+        auctionOut.writeObject(message);
     }
 
 
 
     public static void main(String[] args) {
+        // starts the display along???
 
 
     }
@@ -152,6 +192,8 @@ public class Agent {
 
 
     public void closeAgent() {
+        // make this two one for de registering with the bank and one for rereg
+        // with auction houses/
     }
 
     public void bankDeposit(double deposit) throws IOException {
@@ -162,9 +204,7 @@ public class Agent {
         sendToBank(message);
     }
 
-    public LinkedList<String> getAuctionList() {
-        return null;
-    }
+
 
     public void updateBalance() throws IOException {
         Message message = new Message.Builder()
@@ -184,5 +224,9 @@ public class Agent {
     }
 
     public String getStringOfCurrentFloor() {
+    }
+
+    public List<NetInfo> getAuctionHouses() {
+        return auctionHouses;
     }
 }
