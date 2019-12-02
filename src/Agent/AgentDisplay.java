@@ -22,16 +22,21 @@ public class AgentDisplay {
         System.out.println("Successful");
     }
 
+    public void updateAuctionMenu() throws IOException {
+        auctionHouseMenu();
+    }
+
     public void printBalance() {
         System.out.println("Current Balance: " + agent.getBalance());
     }
 
-    public void startUp() throws IOException {
+    public void startUp() throws IOException, InterruptedException {
         System.out.println("[Connect]/[Quit]");
         String nextLine = scanner.nextLine();
         if (nextLine == "Connect") {
             System.out.println("Attempting to Connect?");
             agent.registerBank();
+           // wait(); ?
             if (agent.connectedToBank) {
                 bankMenu();
             } else {
@@ -58,6 +63,10 @@ public class AgentDisplay {
             bankMenu();
         } else if (nextLine == "Agent") {
             System.out.println(agent.idToString());
+            System.out.println("Won Items:");
+            for(Item item: agent.getWonItems()) {
+                System.out.println("- "+item.name());
+            }
             bankMenu();
             /**
              * for testing / informative purposes
@@ -76,6 +85,7 @@ public class AgentDisplay {
     private void auctionHouseList() throws IOException {
         List<NetInfo> auctionHouses = agent.getAuctionHouses();
         System.out.println("Auction Houses:");
+        printBalance();
         int goBack = auctionHouses.size()+1;
         for (int i=1; i <= auctionHouses.size(); i++) {
             System.out.println("["+i+"] " + auctionHouses.get(i).toString());
@@ -92,22 +102,27 @@ public class AgentDisplay {
         }
     }
 
-
-    private void auctionHouseMenu() throws IOException {
+    /**
+     * this has potential to be bad.  It might dork up when we try
+     *   to update the catalogue from the auction house.
+     * @throws IOException
+     */
+    public void auctionHouseMenu() throws IOException {
+        int choice = -1;
+        double bid = -1;
         System.out.println("Items currently up for bid:");
+        printBalance();
         printCurrentItems();
         int goBack = 1 + agent.getCatalogue().size();
         System.out.println("["+goBack+"] Go back]");
-        int choice = scanner.nextInt();
-        if (choice == agent.getCatalogue().size()+2) {
+        choice = scanner.nextInt();
+        if (choice == agent.getCatalogue().size()+1) {
             agent.deRegisterAuctionHouse();
             bankMenu();
         } else {
             System.out.println("Bid:");
-            double bid = scanner.nextDouble();
-            agent.sendBidToAH(int choice, double bid);
-
-
+            bid = scanner.nextDouble();
+            agent.sendBidToAH(choice, bid);
         }
     }
 
@@ -117,8 +132,11 @@ public class AgentDisplay {
     private void printCurrentItems() {
         ArrayList<Item> catalogue = agent.getCatalogue();
         for (int i=0; i < catalogue.size(); i++) {
-            System.out.println("["+i+"]"+catalogue.get(i-1).name());
-            System.out.println("Current Bid: "+catalogue.get(i-1).value());
+            System.out.println("["+i+"]"+catalogue.get(i).name());
+
+            System.out.println("Current Bid: "+catalogue.get(i).getCurrentBid());
+            System.out.println("Starting Bid: "+catalogue.get(i).getMinimumBid());
+
             if (catalogue.get(i).getBidder()==agent.getAccountNumber()) {
                 System.out.println("Currently Winning\n");
             }

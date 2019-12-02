@@ -49,6 +49,10 @@ public class AuctionMessage implements Serializable {
             this.accountId = accountId;
             return this;
         }
+        public Builder amount(Double amount) {
+            this.amount = amount;
+            return this;
+        }
         public static Builder newB(){
             return new Builder();
         }
