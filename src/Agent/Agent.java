@@ -10,7 +10,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,7 +33,9 @@ public class Agent {
     private String auctionHouse;
     private int auctionPort;
     private List<NetInfo> auctionHouses;
-    private ArrayList<Item> catalouge;
+    private ArrayList<Item> catalogue;
+    private ArrayList<Item> currentlyBidding;
+    private ArrayList<Item> wonItems;
     private boolean activeBid;
 
 
@@ -66,6 +67,17 @@ public class Agent {
         } catch(IOException e) {
         e.printStackTrace();
         }
+    }
+
+    public ArrayList<Item> getCatalogue() {
+        return catalogue;
+    }
+
+    public UUID getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void deRegisterAuctionHouse() {
     }
 
     public class setBankIn implements Runnable{
@@ -100,18 +112,25 @@ public class Agent {
 */
 
         private void processBankMessage(Message message) {
+            if (message.getNetInfo()!=null) {
+                auctionHouses = message.getNetInfo();
+            }
             switch (message.getResponse()) {
                 case SUCCESS: {
+                    accountNumber = message.getAccountId();
+                    balance = message.getAmount();
 
                 }
                 case ERROR: {
+                    System.out.println("Something has gone terribly wrong the " +
+                            "bank has made a large error in your favor");
 
                 }
                 case INSUFFICIENT_FUNDS: {
-
+                    System.out.println("Insufficient funds");
                 }
                 case INVALID_PARAMETERS: {
-
+                    System.out.println("Invalid Parameters, check the code or the input?");
                 }
             }
         }
@@ -134,6 +153,8 @@ public class Agent {
             //auctionServer = new ServerSocket(auctionServerPort); // not sure what to init this as
             auctionOut = new ObjectOutputStream(auctionClient.getOutputStream());
             registerAuctionHouse();
+            Thread auctionInThread = new Thread(new setAuctionIn());
+            auctionInThread.start();
             return true;
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -161,12 +182,30 @@ public class Agent {
             if (message.getType()==AuctionMessage.AMType.ACCEPTANCE) {
                 activeBid = true;
             }
+            if (message.getCatalogue() != null) {
+                catalogue = message.getCatalogue();
+            }
+            switch (message.getType()) {
+                case OUTBID: {
+
+                }
+                case WINNER: {
+                    //comms with bank go here about winning???
+                }
+                case REJECTION: {
+
+                }
+                case ACCEPTANCE: {
+
+                }
+            }
+
 
         }
     }
 
         private void getAuctionNetInfo(int choice) {
-        auctionHouse = auctionHouses.get(choice).getHostname();
+        auctionHouse = auctionHouses.get(choice).getIp();
         auctionPort = auctionHouses.get(choice).getPort();
 
     }
@@ -178,6 +217,10 @@ public class Agent {
         AuctionMessage message = AuctionMessage.Builder.newB()
                 .type(AuctionMessage.AMType.REGISTER).id(accountNumber).build();
         auctionOut.writeObject(message);
+    }
+
+    public void sendBidToAh(int choice, double bid) {
+
     }
 
 

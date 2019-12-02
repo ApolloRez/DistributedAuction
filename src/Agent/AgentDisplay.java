@@ -1,8 +1,10 @@
 package Agent;
 
+import AuctionHouse.Item;
 import shared.NetInfo;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -91,15 +93,37 @@ public class AgentDisplay {
     }
 
 
-    private void auctionHouseMenu() {
-        System.out.println("Items currently up for bit:");
+    private void auctionHouseMenu() throws IOException {
+        System.out.println("Items currently up for bid:");
         printCurrentItems();
- //TODO this spot right here
+        int goBack = 1 + agent.getCatalogue().size();
+        System.out.println("["+goBack+"] Go back]");
+        int choice = scanner.nextInt();
+        if (choice == agent.getCatalogue().size()+2) {
+            agent.deRegisterAuctionHouse();
+            bankMenu();
+        } else {
+            System.out.println("Bid:");
+            double bid = scanner.nextDouble();
+            agent.sendBidToAH(int choice, double bid);
 
 
+        }
     }
 
+
+
+
     private void printCurrentItems() {
+        ArrayList<Item> catalogue = agent.getCatalogue();
+        for (int i=0; i < catalogue.size(); i++) {
+            System.out.println("["+i+"]"+catalogue.get(i-1).name());
+            System.out.println("Current Bid: "+catalogue.get(i-1).value());
+            if (catalogue.get(i).getBidder()==agent.getAccountNumber()) {
+                System.out.println("Currently Winning\n");
+            }
+        }
+
 
     }
 
