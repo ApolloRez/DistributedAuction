@@ -176,18 +176,21 @@ public class Agent {
                             connectedToBank = true;
                             accountNumber = message.getAccountId();
                             //balance = message.getAmount();
-
+                            break;
                         }
                         case ERROR: {
                             System.out.println("Something has gone terribly wrong the " +
                                     "bank has made a large error in your favor");
+                            break;
 
                         }
                         case INSUFFICIENT_FUNDS: {
                             System.out.println("Insufficient funds");
+                            break;
                         }
                         case INVALID_PARAMETERS: {
                             System.out.println("Invalid Parameters, check the code or the input?");
+                            break;
                         }
                     }
                 }
