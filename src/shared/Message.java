@@ -19,7 +19,7 @@ public class Message implements Serializable {
      *
      * @param builder Builder
      */
-    private Message(Builder builder) {
+    public Message(Builder builder) {
         this.amount = builder.amount;
         this.sender = builder.sender;
         this.accountId = builder.accountId;
