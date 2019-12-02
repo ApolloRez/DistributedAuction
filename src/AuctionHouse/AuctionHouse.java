@@ -32,7 +32,7 @@ public class AuctionHouse{
     private boolean run = true;
     private UUID auctionId;
 
-    private AuctionHouse(String address,int clientPort, int serverPort){
+    public AuctionHouse(String address, int clientPort, int serverPort){
         setupItemList();
             try{
                 System.out.println("Connecting to Auction House");
@@ -89,7 +89,7 @@ public class AuctionHouse{
      * @param needed number of items to create
      */
     private void addItems(int needed){
-        while(needed >= 0){
+        while(needed > 0){
             String name = list.getRandomName();
             int random = new Random().nextInt(50);
             Item item = new Item(name, random);
@@ -383,5 +383,8 @@ public class AuctionHouse{
             }
         }
         return null;
+    }
+    public ArrayList<Item> getCatalogue(){
+        return catalogue;
     }
 }
