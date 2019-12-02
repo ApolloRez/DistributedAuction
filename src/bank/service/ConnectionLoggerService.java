@@ -40,7 +40,7 @@ public class ConnectionLoggerService {
     /**
      * Set the listView
      *
-     * @param listView ListView<String>s</String>
+     * @param listView ListView<String></String>
      */
     public void setListView(ListView<String> listView) {
         listView.setItems(messageLog);

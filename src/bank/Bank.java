@@ -1,7 +1,6 @@
 package bank;
 
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import shared.NetInfo;
 
 import java.util.*;
@@ -14,7 +13,7 @@ import java.util.*;
 public class Bank {
     private final UUID id;
     private Map<UUID, Account> accounts;
-    private ObservableList<NetInfo> auctionHouseNetInfo;
+    private List<NetInfo> auctionHouseNetInfo;
 
     /**
      * Constructor that initializes the bank, creating a data structure to
@@ -48,12 +47,42 @@ public class Bank {
     }
 
     /**
+     * Remove the AuctionHouse from the netInfo list as well as the accounts.
+     *
+     * @param accountId UUID
+     * @param netInfo   {@link} NetInfo
+     */
+    public void deRegisterAuctionHouse(UUID accountId, NetInfo netInfo) {
+        auctionHouseNetInfo.remove(netInfo);
+        accounts.remove(accountId);
+    }
+
+    /**
      * Register a client account with this bank and return the id of the account.
      *
      * @return UUID
      */
     public UUID registerClient() {
         return createAccount();
+    }
+
+    /**
+     * Remove client from he accounts list.
+     *
+     * @param accountId {@link} UUID
+     */
+    public void deRegisterClient(UUID accountId) {
+        accounts.remove(accountId);
+    }
+
+    public void auctionHouseConnDrop(String iNetAddress) {
+        NetInfo delete = null;
+        for (NetInfo netInfo : auctionHouseNetInfo) {
+            if (iNetAddress.equals(netInfo.getIp())) {
+                delete = netInfo;
+            }
+        }
+        auctionHouseNetInfo.remove(delete);
     }
 
     /**
@@ -89,19 +118,19 @@ public class Bank {
 
     /**
      * Given two accounts, check if they exist, and if they do, attempt to
-     * transfer funds from the client to the auctions house.
+     * transfer funds from the sender to the auctions house.
      *
-     * @param client       UUID
-     * @param auctionHouse UUID
-     * @param amount       double
+     * @param sender    UUID
+     * @param recipient UUID
+     * @param amount    double
      * @return boolean
      */
-    public synchronized boolean transferFunds(UUID client,
-                                              UUID auctionHouse,
+    public synchronized boolean transferFunds(UUID sender,
+                                              UUID recipient,
                                               double amount) {
-        if (accounts.containsKey(client) && accounts.containsKey(auctionHouse)) {
-            if (accounts.get(client).withdraw(amount)) {
-                accounts.get(auctionHouse).deposit(amount);
+        if (accounts.containsKey(sender) && accounts.containsKey(recipient)) {
+            if (accounts.get(sender).withdraw(amount)) {
+                accounts.get(recipient).deposit(amount);
                 return true;
             } else {
                 return false;
@@ -142,14 +171,20 @@ public class Bank {
     /**
      * Return the available balance of said account.
      *
-     * @param targetId UUID
+     * @param accountId UUID
      * @return double
      */
-    public synchronized double getAccountFunds(UUID targetId) {
-        return accounts.get(targetId).getAvailableBalance();
+    public synchronized double getAccountFunds(UUID accountId) {
+        return accounts.get(accountId).getAvailableBalance();
     }
 
-    public synchronized double getHeldFunds(UUID targetId) {
-        return accounts.get(targetId).getHeldFunds();
+    /**
+     * Get the amount of held funds for said account.
+     *
+     * @param accountId UUID
+     * @return double
+     */
+    public synchronized double getHeldFunds(UUID accountId) {
+        return accounts.get(accountId).getHeldFunds();
     }
 }

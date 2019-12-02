@@ -33,10 +33,10 @@ public class NetInfo implements Serializable {
     }
 
     @Override
-    public String toString(){
-        String main = "";
-        main = main.concat(ip+"\n");
-        main = main.concat(port+"\n");
-        return main;
+    public String toString() {
+        return "NetInfo{" +
+                "ip='" + ip + '\'' +
+                ", port=" + port +
+                '}';
     }
 }

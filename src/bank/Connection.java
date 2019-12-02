@@ -6,7 +6,9 @@ import shared.Message;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 public class Connection implements Runnable {
 
@@ -16,7 +18,6 @@ public class Connection implements Runnable {
     private final Bank bank;
     private final ConnectionLoggerService connectionLoggerService;
     private boolean running = true;
-
     /**
      * The connection object handles the communication between the bank and
      * the clients.
@@ -46,7 +47,7 @@ public class Connection implements Runnable {
     /**
      * Stop this running thread.
      */
-    public void closeThread() {
+    private void closeThread() {
         running = false;
     }
 
@@ -60,23 +61,23 @@ public class Connection implements Runnable {
         try {
             Message message = readMessage();
             if (message.getCommand() == Message.Command.REGISTER_CLIENT) {
-                objectOutputStream.writeObject(
-                        new Message.Builder()
-                                .accountId(bank.registerClient())
-                                .response(Message.Response.SUCCESS)
-                                .command(Message.Command.REGISTER_AH)
-                                .send(bank.getId()));
+                writeMessage(new Message.Builder()
+                        .accountId(bank.registerClient())
+                        .response(Message.Response.SUCCESS)
+                        .command(Message.Command.REGISTER_AH)
+                        .send(bank.getId()));
             }
             if (message.getCommand() == Message.Command.REGISTER_AH) {
-                objectOutputStream.writeObject(
-                        new Message.Builder()
-                                .accountId(bank.registerAuctionHouse(
-                                        message.getNetInfo().get(0)))
-                                .send(bank.getId()));
+                System.out.println("here");
+                writeMessage(new Message.Builder()
+                        .accountId(bank.registerAuctionHouse(
+                                message.getNetInfo().get(0)))
+                        .response(Message.Response.SUCCESS)
+                        .command(Message.Command.REGISTER_AH)
+                        .send(bank.getId()));
             }
             while (running) {
                 message = readMessage();
-                System.out.println(message);
                 switch (message.getCommand()) {
                     case DEPOSIT: {
                         bank.depositFunds(message.getSender(),
@@ -84,6 +85,7 @@ public class Connection implements Runnable {
                         writeMessage(new Message.Builder()
                                 .response(Message.Response.SUCCESS)
                                 .command(Message.Command.DEPOSIT)
+                                .amount(message.getAmount())
                                 .send(bank.getId()));
                         break;
                     }
@@ -119,8 +121,8 @@ public class Connection implements Runnable {
                         break;
                     }
                     case TRANSFER: {
-                        if (bank.transferFunds(message.getAccountId(),
-                                message.getSender(), message.getAmount())) {
+                        if (bank.transferFunds(message.getSender(),
+                                message.getAccountId(), message.getAmount())) {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.SUCCESS)
                                     .command(Message.Command.TRANSFER)
@@ -133,8 +135,9 @@ public class Connection implements Runnable {
                         break;
                     }
                     case GET_AVAILABLE: {
-                        writeMessage(new Message.Builder().amount(
-                                bank.getAccountFunds(message.getSender()))
+                        writeMessage(new Message.Builder()
+                                .amount(bank.getAccountFunds(message.getSender()))
+                                .command(Message.Command.GET_AVAILABLE)
                                 .send(bank.getId()));
                         break;
                     }
@@ -146,9 +149,18 @@ public class Connection implements Runnable {
                     }
                     case GET_RESERVED: {
                         writeMessage(new Message.Builder()
-                                .amount(bank.getHeldFunds(message.getAccountId()))
+                                .amount(bank.getHeldFunds(message.getSender()))
                                 .send(bank.getId()));
                         break;
+                    }
+                    case DEREGISTER_AH: {
+                        bank.deRegisterAuctionHouse(message.getSender(),
+                                message.getNetInfo().get(0));
+                        this.closeThread();
+                    }
+                    case DEREGISTER_CLIENT: {
+                        bank.deRegisterClient(message.getSender());
+                        this.closeThread();
                     }
                 }
             }
@@ -161,7 +173,13 @@ public class Connection implements Runnable {
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            bank.auctionHouseConnDrop(socket.getInetAddress().getHostAddress());
+            try {
+                connectionLoggerService.add("Connection dropped : "
+                        + InetAddress.getLocalHost().getHostName());
+            } catch (UnknownHostException ignored) {
+            }
             this.closeThread();
         }
     }
@@ -173,8 +191,8 @@ public class Connection implements Runnable {
      * @throws IOException Cannot write to ObjectOutputStream
      */
     private void writeMessage(Message message) throws IOException {
-        connectionLoggerService.add(message.toString());
         objectOutputStream.writeObject(message);
+        connectionLoggerService.add("Bank : " + message.toString());
     }
 
     /**
@@ -186,7 +204,7 @@ public class Connection implements Runnable {
      */
     private Message readMessage() throws IOException, ClassNotFoundException {
         Message message = (Message) objectInputStream.readObject();
-        connectionLoggerService.add(message.toString());
+        connectionLoggerService.add("Client : " + message.toString());
         return message;
     }
 }
