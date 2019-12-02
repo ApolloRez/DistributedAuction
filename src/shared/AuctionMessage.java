@@ -10,11 +10,10 @@ import java.util.UUID;
  * messaging system between an agent and an Auction House
  */
 public class AuctionMessage implements Serializable {
-    private String notification;   //Auction letting client know status of bids
     private AMType type;   //what kind of message is it
     private ArrayList<Item> catalogue; //list of items for sale
     private Double amount;          //amount to bid
-    private Item itemID;       //The item you want to bid on
+    private UUID itemID;       //The item you want to bid on
     private UUID accountId; //ID of client when first contacting Auction House
 
     public enum AMType{
@@ -27,26 +26,22 @@ public class AuctionMessage implements Serializable {
         UPDATE      //Auction sends updated catalogue to client
     }
     public static class Builder {
-        private String notification = null;
         private AMType type = null;
         private ArrayList<Item> catalogue = null;
         private Double amount = null;
-        private Item itemID= null;
+        private UUID itemID= null;
         private UUID accountId = null;
 
         public Builder type(AMType type) {
             this.type = type;
             return this;
         }
+
         public Builder list(ArrayList<Item> catalogue){
             this.catalogue = catalogue;
             return this;
         }
-        public Builder amount(Double amount) {
-            this.amount = amount;
-            return this;
-        }
-        public Builder item(Item itemID){
+        public Builder item(UUID itemID){
             this.itemID  = itemID;
             return this;
         }
@@ -63,16 +58,11 @@ public class AuctionMessage implements Serializable {
     }
 
     public AuctionMessage(Builder builder) {
-        this.notification = builder.notification;
         this.type = builder.type;
         this.catalogue = builder.catalogue;
         this.amount = builder.amount;
         this.itemID = builder.itemID;
         this.accountId = builder.accountId;
-    }
-
-    public String getNotification(){
-        return notification;
     }
 
     public AMType getType(){
@@ -86,9 +76,13 @@ public class AuctionMessage implements Serializable {
     public Double getAmount(){
         return amount;
     }
-    public Item getItem(){
+    public UUID getItem(){
         return itemID;
     }
+
+    /**
+     * @return returns UUID of sender
+     */
     public UUID getId(){
         return accountId;
     }

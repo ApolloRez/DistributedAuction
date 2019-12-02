@@ -5,9 +5,8 @@ import shared.AuctionMessage.AMType;
 import shared.Message;
 import shared.NetInfo;
 import shared.Message.Command;
-import sun.awt.image.ImageWatched;
 
-import java.io.EOFException;
+import java.awt.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,7 +15,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -40,13 +39,11 @@ public class AuctionHouse{
                 System.out.println("Connection established");
                 server = new ServerSocket(serverPort);
                 System.out.println("Action house server started");
-                setupItemList();
-                addItems(3);
                 System.out.println(catalogue.size() + " items created");
                 Thread serverThread = new Thread(new AuctionServer());
                 serverThread.start();
                 out = new ObjectOutputStream(auctionClient.getOutputStream());
-
+                setupItemList();
                 String ip;
                 try(final DatagramSocket socket = new DatagramSocket()){
                     socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
@@ -59,7 +56,6 @@ public class AuctionHouse{
                 Message register = new Message.Builder().command(Command.REGISTER_AH)
                         .netInfo(aHInfo).send(null);
                 sendToBank(register);
-
 
                 Thread inThread = new Thread(new AuctionIn());
                 inThread.start();
@@ -92,7 +88,7 @@ public class AuctionHouse{
         while(needed > 0){
             String name = list.getRandomName();
             int random = new Random().nextInt(50);
-            Item item = new Item(name, random);
+            Item item = new Item(name, random,auctionId);
             catalogue.add(item);
             needed--;
         }
@@ -141,7 +137,7 @@ public class AuctionHouse{
         private Socket agentSocket;
         private ObjectInputStream agentIn;
         private ObjectOutputStream agentOut;
-        private UUID id;
+        private UUID agentID;
         private AuctionMessage message = null;
         private BlockingQueue<Boolean> bankSignoff= new LinkedBlockingDeque<>();
         @Override
@@ -150,8 +146,16 @@ public class AuctionHouse{
                 try{
                     message = (AuctionMessage) agentIn.readObject();
                     process(message);
-                }catch(IOException|ClassNotFoundException e){
+                }catch(ClassNotFoundException e){
                     e.printStackTrace();
+                }catch (IOException e){
+                    try {
+                        agentIn.close();
+                        agentOut.close();
+                        agentSocket.close();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
                 }
             }while(message != null);
         }
@@ -168,10 +172,10 @@ public class AuctionHouse{
             }
         }
         private void register(AuctionMessage message){
-            id = message.getId();
+            agentID = message.getId();
             if(activeAgents.size() == 0){
-                Thread countdown = new Thread(new Countdown());
-                countdown.start();
+                //Thread countdown = new Thread(new Countdown());
+                //countdown.start();
             }
             activeAgents.add(this);
             AuctionMessage reply =AuctionMessage.Builder.newB()
@@ -179,42 +183,47 @@ public class AuctionHouse{
             sendOut(reply);
         }
 
-        private void outBid(){
+        private void outBid(UUID oldBidder,UUID itemID){
+            AgentProxy agent = agentSearch(oldBidder);
             AuctionMessage outbid = AuctionMessage.Builder.newB()
-                    .type(AMType.OUTBID).id(id).build();
-            sendOut(outbid);
+                    .type(AMType.OUTBID).item(itemID).id(agentID).build();
+            assert agent != null;
+            agent.sendOut(outbid);
         }
 
-        private void winner(Item item){
+        private void winner(UUID itemID){
             AuctionMessage winner = AuctionMessage.Builder.newB()
-                    .type(AMType.WINNER).id(id).item(item).build();
+                    .type(AMType.WINNER).id(agentID).item(itemID).build();
             sendOut(winner);
         }
 
 
         private void bid(AuctionMessage message){
-            Item bidItem = message.getItem();
+            UUID itemID = message.getItem();
             UUID bidderId = message.getId();
             double amount = message.getAmount();
-            int stillInCatalogue = catalogue.indexOf(bidItem);
-            if(stillInCatalogue == -1){
+            Item bidItem = itemSearch(itemID);
+            if(bidItem == null){
                 reject();
-                return;
             }
-            double currentValue = bidItem.value();
-            if(amount > currentValue){
+            assert bidItem != null;
+            double value = bidItem.getCurrentBid();
+            if( value == 0.0){
+                value = bidItem.getMinimumBid();
+            }
+            if(amount > value){
                 Message requestHold = new Message.Builder()
                         .command(Command.HOLD)
-                        .accountId(bidderId).amount(currentValue).send(this.id);
+                        .accountId(bidderId).amount(value).send(this.agentID);
 
                 try{
                     out.writeObject(requestHold);
                     Boolean success = bankSignoff.take();
                     if(success){
                         UUID oldBidder = bidItem.getBidder();
-                        release(oldBidder,currentValue);
-                        bidItem.setNewValue(amount);
-                        bidItem.newBidder(bidderId);
+                        release(oldBidder,value);
+                        outBid(oldBidder,bidItem.getItemID());
+                        bidItem.outBid(bidderId,amount);
                         accept();
                     }else{
                        reject();
@@ -230,7 +239,7 @@ public class AuctionHouse{
         private synchronized void release(UUID id, Double amount){
             Message release = new Message.Builder()
                     .command(Command.RELEASE_HOLD)
-                    .accountId(id).amount(amount).send(this.id);
+                    .accountId(id).amount(amount).send(auctionId);
             sendToBank(release);
         }
         private void reject(){
@@ -269,16 +278,17 @@ public class AuctionHouse{
 
     private class Countdown implements Runnable{
         private List<Item> toRemove = new ArrayList<Item>();
+        private Item item;
         private boolean remove = false;
         @Override
         public void run() {
             while(run){
                 for(Item item: catalogue){
-                    item.decrement();
+                    /*item.decrement();
                     if(item.over()){
                         remove = true;
                         toRemove.add(item);
-                    }
+                    }*/
                 }
                 if(remove){
                     for(Item item:toRemove){
@@ -291,6 +301,9 @@ public class AuctionHouse{
             }catch(InterruptedException e){
                 e.printStackTrace();
             }
+        }
+        public Countdown(Item item){
+            this.item = item;
         }
     }
 
@@ -341,6 +354,7 @@ public class AuctionHouse{
                     hold(message);
                     break;
                 case RELEASE_HOLD:
+                    released(message);
                     break;
                 case REGISTER_AH:
                     registered(message);
@@ -351,7 +365,7 @@ public class AuctionHouse{
         private void hold(Message message){
             UUID bidder = message.getAccountId();
             Message.Response response = message.getResponse();
-            AgentProxy temp = search(bidder);
+            AgentProxy temp = agentSearch(bidder);
             if(temp != null){
                 if(response == Message.Response.SUCCESS){
                     try{
@@ -371,19 +385,47 @@ public class AuctionHouse{
             }
         }
 
+        private void released(Message message){
+            Message.Response response = message.getResponse();
+            if(response == Message.Response.SUCCESS){
+                System.out.println("release was successful");
+            }else{
+                System.out.println("release failed");
+            }
+        }
         private void registered(Message message){
             auctionId = message.getAccountId();
+            addItems(3);
             System.out.println("bank registration successful:"+auctionId);
         }
     }
-    private AgentProxy search(UUID id){
+
+    /**
+     * searches for agent in active agent list
+     * @param id id of agent we want
+     * @return returns the agentProxy we want, null otherwise
+     */
+    private AgentProxy agentSearch(UUID id){
         for(AgentProxy agent: activeAgents){
-            if(agent.id == id){
+            if(agent.agentID == id){
                 return agent;
             }
         }
         return null;
     }
+
+    private Item itemSearch(UUID id){
+        for(Item item: catalogue){
+            if(item.getItemID() == id){
+                return item;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @return returns the catalogue
+     */
     public ArrayList<Item> getCatalogue(){
         return catalogue;
     }

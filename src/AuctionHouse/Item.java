@@ -1,49 +1,47 @@
 package AuctionHouse;
 
-import java.util.Random;
-import java.util.Timer;
-import java.util.UUID;
+import java.util.*;
 
 public class Item {
     private String name;
-    private double value;
+    private double currentBid;
     private UUID bidderId;
-    private int timeLeft;
-    private Timer timer = new Timer();
+    private UUID houseID;
+    private UUID itemID;
+    private double minimumBid;
+
     public String name(){
         return name;
     }
 
-    public double value(){
-        return value;
+    public double getCurrentBid(){
+        return currentBid;
     }
 
-    public void setNewValue(double value){
-        this.value = value;
+    public double getMinimumBid(){
+        return minimumBid;
     }
-    public void newBidder(UUID bidder){
+
+    public void outBid(UUID bidder, double amount){
         this.bidderId = bidder;
+        this.currentBid = amount;
     }
 
+    public UUID getHouseID(){
+        return houseID;
+    }
+    public UUID getItemID(){
+        return itemID;
+    }
 
     public UUID getBidder(){
         return bidderId;
     }
 
-    public boolean over(){
-        return timeLeft <= 0;
-    }
-
-    public void decrement(){
-        timeLeft--;
-    }
-    public void slateForRemoval(){
-        timeLeft = -1;
-    }
-
-    public Item(String name, double value){
-        this.value = value;
+    public Item(String name, double value,UUID houseID){
+        this.minimumBid = value;
         this.name = name;
-        timeLeft = 30;
+        this.houseID = houseID;
+        itemID = UUID.randomUUID();
     }
 }
