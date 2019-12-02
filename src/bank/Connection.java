@@ -64,7 +64,7 @@ public class Connection implements Runnable {
                 writeMessage(new Message.Builder()
                         .accountId(bank.registerClient())
                         .response(Message.Response.SUCCESS)
-                        .command(Message.Command.REGISTER_AH)
+                        .command(Message.Command.REGISTER_CLIENT)
                         .send(bank.getId()));
             }
             if (message.getCommand() == Message.Command.REGISTER_AH) {
@@ -175,13 +175,17 @@ public class Connection implements Runnable {
                     // List<NetInfo> netInfo
                     case DEREGISTER_AH: {
                         bank.deRegisterAuctionHouse(message.getSender(),
-                                message.getNetInfo().get(0));
+                                message.getNetInfo().get(0).getIp());
+                        connectionLoggerService.add("Connection dropped : "
+                                + socket.getInetAddress().getHostName());
                         this.closeThread();
                         break;
                     }
                     // UUID - sender
                     case DEREGISTER_CLIENT: {
                         bank.deRegisterClient(message.getSender());
+                        connectionLoggerService.add("Connection dropped : "
+                                + socket.getInetAddress().getHostName());
                         this.closeThread();
                         break;
                     }

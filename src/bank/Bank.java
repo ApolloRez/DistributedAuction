@@ -48,11 +48,17 @@ public class Bank {
     /**
      * Remove the AuctionHouse from the netInfo list as well as the accounts.
      *
-     * @param accountId UUID
-     * @param netInfo   {@link} NetInfo
+     * @param accountId   UUID
+     * @param iNetAddress String
      */
-    public void deRegisterAuctionHouse(UUID accountId, NetInfo netInfo) {
-        auctionHouseNetInfo.remove(netInfo);
+    public void deRegisterAuctionHouse(UUID accountId, String iNetAddress) {
+        NetInfo delete = null;
+        for (NetInfo netInfo : auctionHouseNetInfo) {
+            if (iNetAddress.equals(netInfo.getIp())) {
+                delete = netInfo;
+            }
+        }
+        auctionHouseNetInfo.remove(delete);
         accounts.remove(accountId);
     }
 
