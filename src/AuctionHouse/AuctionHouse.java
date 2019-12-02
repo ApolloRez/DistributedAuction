@@ -3,9 +3,8 @@ package AuctionHouse;
 import shared.AuctionMessage;
 import shared.AuctionMessage.AMType;
 import shared.Message;
-import shared.NetInfo;
 import shared.Message.Command;
-import sun.awt.image.ImageWatched;
+import shared.NetInfo;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -13,7 +12,6 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -46,11 +44,12 @@ public class AuctionHouse{
                 String ip = server.getInetAddress().getHostAddress();
                 String hostname = server.getInetAddress().getHostName();
                 int port = server.getLocalPort();
-                NetInfo serverInfo = new NetInfo(ip,hostname,port);
+                NetInfo serverInfo = new NetInfo(ip, hostname, port);
                 List<NetInfo> aHInfo = new LinkedList<>();
                 aHInfo.add(serverInfo);
-                Message register = new Message(new Message.Builder()
-                                   .command(Command.REGISTER_AH).netInfo(aHInfo));
+                Message register = new Message.Builder()
+                        .command(Command.REGISTER_AH)
+                        .netInfo(aHInfo).send(null);
                 sendToBank(register);
 
 
@@ -204,19 +203,19 @@ public class AuctionHouse{
                 reject();
                 return;
             }
-            if(amount > bidItem.value()){
-                Message requestHold = new Message(new Message.Builder()
-                                      .command(Command.HOLD).accountId(bidderId));
-                try{
+            if(amount > bidItem.value()) {
+                Message requestHold = new Message.Builder()
+                        .command(Command.HOLD).accountId(bidderId).send(null);
+                try {
                     out.writeObject(requestHold);
                     Boolean success = bankSignoff.take();
-                    if(success){
+                    if (success) {
                         bidItem.setNewValue(amount);
                         UUID oldBidder = bidItem.getBidder();
                         release(oldBidder);
                         bidItem.newBidder(bidderId);
                         accept();
-                    }else{
+                    } else {
                        reject();
                     }
                 }catch (IOException | InterruptedException e){
@@ -227,9 +226,10 @@ public class AuctionHouse{
             }
         }
         private synchronized void release(UUID id){
-            Message release = new Message(new Message.Builder()
+            Message release = new Message.Builder()
                     .command(Command.RELEASE_HOLD)
-                    .accountId(id));
+                    .accountId(id)
+                    .send(null);
             sendToBank(release);
         }
         private void reject(){
@@ -322,7 +322,7 @@ public class AuctionHouse{
                 if(type == Command.HOLD){
 
                 }*/
-            } catch (IOException | ClassNotFoundException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }

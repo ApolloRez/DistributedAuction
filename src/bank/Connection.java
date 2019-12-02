@@ -14,8 +14,8 @@ public class Connection implements Runnable {
     private final ObjectInputStream objectInputStream;
     private final ObjectOutputStream objectOutputStream;
     private final Bank bank;
-    private boolean running = true;
     private final ConnectionLoggerService connectionLoggerService;
+    private boolean running = true;
 
     /**
      * The connection object handles the communication between the bank and
@@ -36,6 +36,7 @@ public class Connection implements Runnable {
 
     /**
      * Get the socket object.
+     *
      * @return Socket
      */
     public Socket getSocket() {
@@ -62,6 +63,8 @@ public class Connection implements Runnable {
                 objectOutputStream.writeObject(
                         new Message.Builder()
                                 .accountId(bank.registerClient())
+                                .response(Message.Response.SUCCESS)
+                                .command(Message.Command.REGISTER_AH)
                                 .send(bank.getId()));
             }
             if (message.getCommand() == Message.Command.REGISTER_AH) {
@@ -80,6 +83,7 @@ public class Connection implements Runnable {
                                 message.getAmount());
                         writeMessage(new Message.Builder()
                                 .response(Message.Response.SUCCESS)
+                                .command(Message.Command.DEPOSIT)
                                 .send(bank.getId()));
                         break;
                     }
@@ -88,10 +92,13 @@ public class Connection implements Runnable {
                                 message.getAmount())) {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.SUCCESS)
+                                    .command(Message.Command.HOLD)
+                                    .accountId(message.getAccountId())
                                     .send(bank.getId()));
                         } else {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.INSUFFICIENT_FUNDS)
+                                    .accountId(message.getAccountId())
                                     .send(bank.getId()));
                         }
                         break;
@@ -102,6 +109,7 @@ public class Connection implements Runnable {
                             writeMessage(new Message.Builder()
                                     .amount(message.getAmount())
                                     .response(Message.Response.SUCCESS)
+                                    .command(Message.Command.RELEASE_HOLD)
                                     .send(bank.getId()));
                         } else {
                             writeMessage(new Message.Builder()
@@ -115,6 +123,7 @@ public class Connection implements Runnable {
                                 message.getSender(), message.getAmount())) {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.SUCCESS)
+                                    .command(Message.Command.TRANSFER)
                                     .send(bank.getId()));
                         } else {
                             writeMessage(new Message.Builder()
@@ -143,8 +152,7 @@ public class Connection implements Runnable {
                     }
                 }
             }
-        } catch (IOException |
-                ClassNotFoundException |
+        } catch (ClassNotFoundException |
                 NullPointerException ignored) {
             try {
                 writeMessage(new Message.Builder()
@@ -153,11 +161,14 @@ public class Connection implements Runnable {
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
+        } catch (IOException ignored) {
+            this.closeThread();
         }
     }
 
     /**
      * Write a message to the ObjectOutputStream.
+     *
      * @param message Message
      * @throws IOException Cannot write to ObjectOutputStream
      */
@@ -168,6 +179,7 @@ public class Connection implements Runnable {
 
     /**
      * Read a message from the ObjectInputStream and return the object.
+     *
      * @return Message
      * @throws IOException            Connection broken
      * @throws ClassNotFoundException Message class not found

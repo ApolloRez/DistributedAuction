@@ -12,10 +12,20 @@ public class ConnectionLoggerService {
     private final ObservableList<String> messageLog =
             FXCollections.observableArrayList();
 
+    /**
+     * Get this instance.
+     *
+     * @return ConnectionLoggerService
+     */
     public static ConnectionLoggerService getInstance() {
         return InstanceHolder.INSTANCE;
     }
 
+    /**
+     * Add a message to the messageLog.
+     *
+     * @param message String
+     */
     public void add(String message) {
         Platform.runLater(() -> {
             messageLog.add(message);
@@ -27,6 +37,11 @@ public class ConnectionLoggerService {
                 new ConnectionLoggerService();
     }
 
+    /**
+     * Set the listView
+     *
+     * @param listView ListView<String>s</String>
+     */
     public void setListView(ListView<String> listView) {
         listView.setItems(messageLog);
     }

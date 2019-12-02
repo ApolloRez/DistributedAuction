@@ -1,5 +1,7 @@
 package bank;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import shared.NetInfo;
 
 import java.util.*;
@@ -12,13 +14,14 @@ import java.util.*;
 public class Bank {
     private final UUID id;
     private Map<UUID, Account> accounts;
-    private List<NetInfo> auctionHouseNetInfo;
+    private ObservableList<NetInfo> auctionHouseNetInfo;
 
     /**
      * Constructor that initializes the bank, creating a data structure to
      * organize the banks clients.
      */
     public Bank() {
+        auctionHouseNetInfo = FXCollections.observableArrayList();
         accounts = new HashMap<>();
         id = UUID.randomUUID();
     }
@@ -109,15 +112,15 @@ public class Bank {
     }
 
     /**
-     * Given a targetId targetId, place a hold on the funds of the given amount.
+     * Given a accountId accountId, place a hold on the funds of the given amount.
      *
-     * @param targetId UUID
-     * @param amount   double
+     * @param accountId UUID
+     * @param amount    double
      * @return boolean
      */
-    public synchronized boolean holdFunds(UUID targetId, double amount) {
-        if (accounts.containsKey(targetId)) {
-            return accounts.get(targetId).holdFunds(amount);
+    public synchronized boolean holdFunds(UUID accountId, double amount) {
+        if (accounts.containsKey(accountId)) {
+            return accounts.get(accountId).holdFunds(amount);
         }
         return false;
     }
@@ -125,13 +128,13 @@ public class Bank {
     /**
      * Release the specified amount of funds from the held funds.
      *
-     * @param targetId UUID
-     * @param amount   double
+     * @param accountId UUID
+     * @param amount    double
      * @return boolean
      */
-    public synchronized boolean releaseFunds(UUID targetId, double amount) {
-        if (accounts.containsKey(targetId)) {
-            return accounts.get(targetId).releaseFunds(amount);
+    public synchronized boolean releaseFunds(UUID accountId, double amount) {
+        if (accounts.containsKey(accountId)) {
+            return accounts.get(accountId).releaseFunds(amount);
         }
         return false;
     }
