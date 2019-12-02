@@ -1,7 +1,7 @@
 package AuctionHouse;
 
-import AuctionHouse.AuctionHouse;
 import bank.gui.View;
+import bank.service.ConnectionLoggerService;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -16,29 +16,34 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import shared.AuctionMessage;
 import java.util.ArrayList;
 
 public class AuctionGui extends Application {
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("10.1.10.57");
-    private TextField portInput = new TextField("5000");
-    private TextField serverInput = new TextField("4444");
+    private TextField ipInputField = new TextField("10.84.93.173");
+    private TextField portInput = new TextField("4444");
+    private TextField serverInput = new TextField("4500");
     private ArrayList<Item> catalogue = new ArrayList<>();
     private VBox listDisplay = new VBox();
     private AuctionHouse auction;
+    private Button disconnect = new Button("Shutdown");
+    private Button connect = new Button("connect");
     private boolean done = false;
     @Override
     public void start(Stage stage) {
 
         topWindowSetup();
-        //View logger = new View();
-        //bPane.setBottom(logger.getRoot());
+        View logger = new View();
+        bPane.setBottom(logger.getRoot());
         Scene scene = new Scene(bPane,400,400);
         stage.setOnCloseRequest(e -> {
             Platform.exit();
             System.exit(0);
         });
+        EventHandler<ActionEvent> event = e -> shutdown();
+        disconnect.setOnAction(event);
+        disconnect.setDisable(true);
+        bPane.setRight(disconnect);
         stage.setTitle("Auction House");
         stage.setScene(scene);
         stage.show();
@@ -64,7 +69,6 @@ public class AuctionGui extends Application {
         serverPort.getChildren().addAll(serverText,serverInput);
         topWindow.getChildren().add(serverPort);
 
-        Button connect = new Button("connect");
         EventHandler<ActionEvent> event = e -> createAuctionHouse();
         connect.setOnAction(event);
         topWindow.getChildren().add(connect);
@@ -72,7 +76,10 @@ public class AuctionGui extends Application {
     }
 
     public void createAuctionHouse(){
+        connect.setDisable(true);
+        done = false;
         String bankIp = ipInputField.getText();
+        System.out.println(bankIp);
         int bankPort = Integer.parseInt(portInput.getText());
         int serverPort = Integer.parseInt(serverInput.getText());
         auction = new AuctionHouse(bankIp,bankPort,serverPort);
@@ -86,8 +93,9 @@ public class AuctionGui extends Application {
     private void setupCatalogue(){
         ScrollPane display = new ScrollPane();
         for (Item item : catalogue) {
-            VBox guiItem = new VBox();
-            Text name = new Text(item.name());
+            HBox guiItem = new HBox();
+            String info = item.name() + "   " + item.getCurrentBid();
+            Text name = new Text(info);
             guiItem.getChildren().add(name);
             listDisplay.getChildren().add(guiItem);
         }
@@ -99,20 +107,42 @@ public class AuctionGui extends Application {
         Runnable updater = this::update;
         while(!done){
             try{
-                Thread.sleep(100);
+                Thread.sleep(200);
             }catch (InterruptedException e){
                 e.printStackTrace();
             }
+            Platform.runLater(updater);
         }
     };
 
+    private void shutdown(){
+        auction.shutdown();
+        done = true;
+        connect.setDisable(false);
+        disconnect.setDisable(true);
+    }
+
     private void update(){
         listDisplay.getChildren().clear();
+        boolean noBidding = false;
         for (Item item : catalogue) {
-            VBox guiItem = new VBox();
-            Text name = new Text(item.name());
+            HBox guiItem = new HBox();
+            if(item.getBidder() != null){
+                noBidding = true;
+                System.out.println(item.getBidder());
+            }
+            String info = item.name();
+            info = info.concat("         ");
+            info = info + item.getCurrentBid();
+            info = info.concat("         ");
+            info = info + item.getTimeLeft();
+            Text name = new Text(info);
             guiItem.getChildren().add(name);
             listDisplay.getChildren().add(guiItem);
+        }
+        disconnect.setDisable(noBidding);
+        if(done){
+            listDisplay.getChildren().clear();
         }
     }
 

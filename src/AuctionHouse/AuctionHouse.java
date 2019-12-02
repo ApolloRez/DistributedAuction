@@ -1,5 +1,6 @@
 package AuctionHouse;
 
+import bank.service.ConnectionLoggerService;
 import shared.AuctionMessage;
 import shared.AuctionMessage.AMType;
 import shared.Message;
@@ -10,10 +11,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -27,19 +25,21 @@ public class AuctionHouse{
     private ItemList list;
     private ArrayList<Item> catalogue = new ArrayList<Item>();
     private Set<AgentProxy> activeAgents = new HashSet<>();
+    private final ConnectionLoggerService log;
     private double balance = 0;
     private boolean run = true;
     private UUID auctionId;
 
     public AuctionHouse(String address, int clientPort, int serverPort){
         setupItemList();
+        log = ConnectionLoggerService.getInstance();
             try{
-                System.out.println("Connecting to Auction House");
+                log.add("Connecting to bank");
+                System.out.println();
                 auctionClient = new Socket(address, clientPort);
-                System.out.println("Connection established");
+                log.add("Connection established");
                 server = new ServerSocket(serverPort);
                 System.out.println("Action house server started");
-                System.out.println(catalogue.size() + " items created");
                 Thread serverThread = new Thread(new AuctionServer());
                 serverThread.start();
                 out = new ObjectOutputStream(auctionClient.getOutputStream());
@@ -51,10 +51,10 @@ public class AuctionHouse{
                 }
                 int port = server.getLocalPort();
                 NetInfo serverInfo = new NetInfo(ip,port);
-                List<NetInfo> aHInfo = new LinkedList<>();
-                aHInfo.add(serverInfo);
+                List<NetInfo> ahInfo = new LinkedList<>();
+                ahInfo.add(serverInfo);
                 Message register = new Message.Builder().command(Command.REGISTER_AH)
-                        .netInfo(aHInfo).send(null);
+                        .netInfo(ahInfo).send(null);
                 sendToBank(register);
 
                 Thread inThread = new Thread(new AuctionIn());
@@ -66,15 +66,30 @@ public class AuctionHouse{
             }
     }
 
-    private void shutdown(){
+    public void shutdown(){
         try{
+            run = false;
+            String ip;
+            try(final DatagramSocket socket = new DatagramSocket()){
+                socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+                ip = socket.getLocalAddress().getHostAddress();
+            }
+            int port = server.getLocalPort();
+            NetInfo serverInfo = new NetInfo(ip,port);
+            List<NetInfo> ahInfo = new LinkedList<>();
+            ahInfo.add(serverInfo);
+            Message deregister = new Message.Builder().command(Command.DEREGISTER_AH)
+                    .netInfo(ahInfo).send(auctionId);
+            sendToBank(deregister);
             assert out != null;
             out.flush();
             input.close();
             out.close();
+            server.close();
             for(AgentProxy agent:activeAgents){
                 agent.shutdown();
             }
+
         }catch(IOException e){
             e.printStackTrace();
         }
@@ -118,8 +133,9 @@ public class AuctionHouse{
                     client.start();
                     Thread.sleep(50);
                 }
-            } catch (IOException | InterruptedException e) {
+            } catch (InterruptedException e) {
                 e.printStackTrace();
+            } catch (IOException e){
             }
         }
     }
@@ -173,10 +189,6 @@ public class AuctionHouse{
         }
         private void register(AuctionMessage message){
             agentID = message.getId();
-            if(activeAgents.size() == 0){
-                //Thread countdown = new Thread(new Countdown());
-                //countdown.start();
-            }
             activeAgents.add(this);
             AuctionMessage reply =AuctionMessage.Builder.newB()
             .type(AMType.REGISTER).list(catalogue).build();
@@ -191,7 +203,7 @@ public class AuctionHouse{
             agent.sendOut(outbid);
         }
 
-        private void winner(UUID itemID){
+        private void winner(UUID bidder,UUID itemID){
             AuctionMessage winner = AuctionMessage.Builder.newB()
                     .type(AMType.WINNER).id(agentID).item(itemID).build();
             sendOut(winner);
@@ -208,7 +220,7 @@ public class AuctionHouse{
             }
             assert bidItem != null;
             double value = bidItem.getCurrentBid();
-            if( value == 0.0){
+            if( value < bidItem.getMinimumBid()){
                 value = bidItem.getMinimumBid();
             }
             if(amount > value){
@@ -277,40 +289,37 @@ public class AuctionHouse{
     }
 
     private class Countdown implements Runnable{
-        private List<Item> toRemove = new ArrayList<Item>();
-        private Item item;
-        private boolean remove = false;
+
         @Override
         public void run() {
+            System.out.println("started timer");
             while(run){
-                for(Item item: catalogue){
-                    /*item.decrement();
-                    if(item.over()){
-                        remove = true;
-                        toRemove.add(item);
-                    }*/
+                int needed =  4 - catalogue.size();
+                if(needed > 0){
+                    addItems(needed);
                 }
-                if(remove){
-                    for(Item item:toRemove){
-                        catalogue.remove(item);
+                for(int i = 0;i < catalogue.size(); i++){
+                    long currentTime = System.currentTimeMillis();
+                    Item item = catalogue.get(i);
+                    item.updateTimer(currentTime);
+                    long timeLeft = item.getTimeLeft();
+                    if(timeLeft <= 0){
+                        System.out.println(timeLeft);
+                        itemResult(item);
                     }
                 }
             }
-            try{
-                Thread.sleep(1000);
-            }catch(InterruptedException e){
-                e.printStackTrace();
-            }
-        }
-        public Countdown(Item item){
-            this.item = item;
         }
     }
 
     private void itemResult(Item item){
-        if(item.getBidder()!= null){
-
+        UUID bidder = item.getBidder();
+        UUID itemID = item.getItemID();
+        AgentProxy agent = agentSearch(bidder);
+        if(agent != null){
+            agent.winner(bidder,itemID);
         }
+        catalogue.remove(item);
     }
 
     private synchronized void sendToBank(Message message) {
@@ -395,7 +404,11 @@ public class AuctionHouse{
         }
         private void registered(Message message){
             auctionId = message.getAccountId();
-            addItems(3);
+            addItems(4);
+            Thread timer = new Thread(new Countdown());
+            timer.setDaemon(true);
+            timer.setPriority(4);
+            timer.start();
             System.out.println("bank registration successful:"+auctionId);
         }
     }
