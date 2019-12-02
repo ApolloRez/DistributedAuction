@@ -16,7 +16,6 @@ public class View {
         connectionLoggerService.setListView(listView);
         root.getChildren().add(listView);
     }
-
     public StackPane getRoot() {
         return root;
     }

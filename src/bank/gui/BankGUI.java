@@ -3,6 +3,7 @@ package bank.gui;
 import bank.Bank;
 import bank.BankServer;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -23,6 +24,10 @@ public class BankGUI extends Application {
         primaryStage.setScene(scene);
         propertyWidth.bind(scene.widthProperty());
         propertyHeight.bind(scene.heightProperty());
+        primaryStage.setOnCloseRequest(e -> {
+            Platform.exit();
+            System.exit(0);
+        });
         primaryStage.show();
     }
 }
