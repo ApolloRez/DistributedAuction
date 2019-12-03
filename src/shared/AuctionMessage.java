@@ -86,4 +86,15 @@ public class AuctionMessage implements Serializable {
     public UUID getId(){
         return accountId;
     }
+
+    @Override
+    public String toString() {
+        return "AuctionMessage{" +
+                "type=" + type +
+                ", catalogue=" + catalogue +
+                ", amount=" + amount +
+                ", itemID=" + itemID +
+                ", accountId=" + accountId +
+                '}';
+    }
 }

@@ -1,8 +1,9 @@
 package AuctionHouse;
 
+import java.io.Serializable;
 import java.util.*;
 
-public class Item {
+public class Item implements Serializable {
     private String name;
     private double currentBid;
     private UUID bidderId;
@@ -51,6 +52,14 @@ public class Item {
 
     public long getBidTime(){
         return bidTime;
+    }
+    public String getBidderIdFour(){
+        String id = bidderId.toString();
+        String shortened = "";
+        for(int i = 0; i < 4;i++){
+            shortened = shortened.concat(String.valueOf(id.charAt(i)));
+        }
+        return shortened;
     }
 
     public Item(String name, double value,UUID houseID){

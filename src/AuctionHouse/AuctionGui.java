@@ -1,7 +1,5 @@
 package AuctionHouse;
 
-import bank.gui.View;
-import bank.service.ConnectionLoggerService;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -20,7 +18,7 @@ import java.util.ArrayList;
 
 public class AuctionGui extends Application {
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("10.84.93.173");
+    private TextField ipInputField = new TextField("10.1.10.57");
     private TextField portInput = new TextField("4444");
     private TextField serverInput = new TextField("4500");
     private ArrayList<Item> catalogue = new ArrayList<>();
@@ -28,13 +26,14 @@ public class AuctionGui extends Application {
     private AuctionHouse auction;
     private Button disconnect = new Button("Shutdown");
     private Button connect = new Button("connect");
+    private VBox vLog = new VBox();
+    private ArrayList<String> log = new ArrayList<>();
     private boolean done = false;
     @Override
     public void start(Stage stage) {
 
         topWindowSetup();
-        View logger = new View();
-        bPane.setBottom(logger.getRoot());
+        setupLog();
         Scene scene = new Scene(bPane,400,400);
         stage.setOnCloseRequest(e -> {
             Platform.exit();
@@ -75,6 +74,14 @@ public class AuctionGui extends Application {
         bPane.setTop(topWindow);
     }
 
+    public void setupLog(){
+        ScrollPane logDisplay = new ScrollPane();
+        logDisplay.setPrefViewportHeight(100);
+        logDisplay.setFitToWidth(true);
+        logDisplay.setContent(vLog);
+        bPane.setBottom(logDisplay);
+    }
+
     public void createAuctionHouse(){
         connect.setDisable(true);
         done = false;
@@ -84,6 +91,7 @@ public class AuctionGui extends Application {
         int serverPort = Integer.parseInt(serverInput.getText());
         auction = new AuctionHouse(bankIp,bankPort,serverPort);
         catalogue = auction.getCatalogue();
+        log = auction.getLog();
         setupCatalogue();
         Thread thread = new Thread(uiUpdater);
         thread.setDaemon(true);
@@ -99,6 +107,7 @@ public class AuctionGui extends Application {
             guiItem.getChildren().add(name);
             listDisplay.getChildren().add(guiItem);
         }
+        listDisplay.setSpacing(5);
         display.setContent(listDisplay);
         bPane.setCenter(display);
     }
@@ -107,7 +116,7 @@ public class AuctionGui extends Application {
         Runnable updater = this::update;
         while(!done){
             try{
-                Thread.sleep(200);
+                Thread.sleep(500);
             }catch (InterruptedException e){
                 e.printStackTrace();
             }
@@ -121,10 +130,18 @@ public class AuctionGui extends Application {
         connect.setDisable(false);
         disconnect.setDisable(true);
     }
-
+    private int displayIndex = 0;
     private void update(){
         listDisplay.getChildren().clear();
         boolean noBidding = false;
+        int size = log.size();
+        if(displayIndex < size){
+            for(int i = displayIndex;i < size; i++){
+                Text temp = new Text(log.get(i));
+                vLog.getChildren().add(temp);
+            }
+            displayIndex = size;
+        }
         for (Item item : catalogue) {
             HBox guiItem = new HBox();
             if(item.getBidder() != null){
@@ -136,6 +153,8 @@ public class AuctionGui extends Application {
             info = info + item.getCurrentBid();
             info = info.concat("         ");
             info = info + item.getTimeLeft();
+            info = info.concat("         ");
+            info = info + getStatus(item);
             Text name = new Text(info);
             guiItem.getChildren().add(name);
             listDisplay.getChildren().add(guiItem);
@@ -143,6 +162,15 @@ public class AuctionGui extends Application {
         disconnect.setDisable(noBidding);
         if(done){
             listDisplay.getChildren().clear();
+            log.clear();
+            vLog.getChildren().clear();
+        }
+    }
+    private String getStatus(Item item){
+        if(item.getBidder() != null){
+            return item.getBidderIdFour();
+        }else{
+            return "no bid";
         }
     }
 

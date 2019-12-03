@@ -1,13 +1,11 @@
 package AuctionHouse;
 
-import bank.service.ConnectionLoggerService;
 import shared.AuctionMessage;
 import shared.AuctionMessage.AMType;
 import shared.Message;
 import shared.NetInfo;
 import shared.Message.Command;
 
-import java.awt.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -25,14 +23,14 @@ public class AuctionHouse{
     private ItemList list;
     private ArrayList<Item> catalogue = new ArrayList<Item>();
     private Set<AgentProxy> activeAgents = new HashSet<>();
-    private final ConnectionLoggerService log;
+    private ArrayList<String> log;
     private double balance = 0;
     private boolean run = true;
     private UUID auctionId;
 
     public AuctionHouse(String address, int clientPort, int serverPort){
         setupItemList();
-        log = ConnectionLoggerService.getInstance();
+        log = new ArrayList<>();
             try{
                 log.add("Connecting to bank");
                 System.out.println();
@@ -127,23 +125,16 @@ public class AuctionHouse{
             try{
                 while(run){
                     Socket clientSocket = server.accept();
+                    log.add("client connected");
                     AgentProxy newAgent = new AgentProxy(clientSocket);
                     activeAgents.add(newAgent);
                     Thread client = new Thread(newAgent);
                     client.start();
-                    Thread.sleep(50);
                 }
-            } catch (InterruptedException e) {
+            }catch (IOException e){
                 e.printStackTrace();
-            } catch (IOException e){
             }
         }
-    }
-
-    public static void main(String[] args) {
-        int clientPort = Integer.parseInt(args[1]);
-        int serverPort = Integer.parseInt(args[2]);
-        AuctionHouse server = new AuctionHouse(args[0], clientPort, serverPort);
     }
 
     /**
@@ -155,12 +146,13 @@ public class AuctionHouse{
         private ObjectOutputStream agentOut;
         private UUID agentID;
         private AuctionMessage message = null;
-        private BlockingQueue<Boolean> bankSignoff= new LinkedBlockingDeque<>();
+        private BlockingQueue<Boolean> bankSignOff = new LinkedBlockingDeque<>();
         @Override
         public void run() {
             do{
                 try{
                     message = (AuctionMessage) agentIn.readObject();
+                    log.add("From a client: " + message);
                     process(message);
                 }catch(ClassNotFoundException e){
                     e.printStackTrace();
@@ -189,9 +181,8 @@ public class AuctionHouse{
         }
         private void register(AuctionMessage message){
             agentID = message.getId();
-            activeAgents.add(this);
             AuctionMessage reply =AuctionMessage.Builder.newB()
-            .type(AMType.REGISTER).list(catalogue).build();
+            .type(AMType.REGISTER).id(auctionId).list(catalogue).build();
             sendOut(reply);
         }
 
@@ -230,7 +221,7 @@ public class AuctionHouse{
 
                 try{
                     out.writeObject(requestHold);
-                    Boolean success = bankSignoff.take();
+                    Boolean success = bankSignOff.take();
                     if(success){
                         UUID oldBidder = bidItem.getBidder();
                         release(oldBidder,value);
@@ -267,12 +258,16 @@ public class AuctionHouse{
 
         private void sendOut(AuctionMessage message){
             try{
+                System.out.println("To Agent: " + message);
+                log.add("To Agent: " + message);
                 agentOut.writeObject(message);
             }catch(IOException e){
                 e.printStackTrace();
             }
         }
         private void shutdown() throws IOException {
+            agentOut.close();
+            agentIn.close();
             agentSocket.close();
         }
 
@@ -294,19 +289,23 @@ public class AuctionHouse{
         public void run() {
             System.out.println("started timer");
             while(run){
-                int needed =  4 - catalogue.size();
-                if(needed > 0){
-                    addItems(needed);
-                }
-                for(int i = 0;i < catalogue.size(); i++){
-                    long currentTime = System.currentTimeMillis();
-                    Item item = catalogue.get(i);
-                    item.updateTimer(currentTime);
-                    long timeLeft = item.getTimeLeft();
-                    if(timeLeft <= 0){
-                        System.out.println(timeLeft);
-                        itemResult(item);
+                try{
+                    int needed =  4 - catalogue.size();
+                    if(needed > 0){
+                        addItems(needed);
                     }
+                    for(int i = 0;i < catalogue.size(); i++){
+                        long currentTime = System.currentTimeMillis();
+                        Item item = catalogue.get(i);
+                        item.updateTimer(currentTime);
+                        long timeLeft = item.getTimeLeft();
+                        if(timeLeft <= 0){
+                            itemResult(item);
+                        }
+                    }
+                    Thread.sleep(200);
+                }catch (InterruptedException e){
+                    e.printStackTrace();
                 }
             }
         }
@@ -324,6 +323,7 @@ public class AuctionHouse{
 
     private synchronized void sendToBank(Message message) {
         try {
+            log.add("To Bank: "+ message);
             out.writeObject(message);
         } catch (IOException e) {
             e.printStackTrace();
@@ -342,7 +342,7 @@ public class AuctionHouse{
                 input = new ObjectInputStream(auctionClient.getInputStream());
                 while(run){
                     Message message = (Message) input.readObject();
-                    System.out.println(message);
+                    log.add("Bank: " + message);
                     processMessage(message);
                 }
             } catch (ClassNotFoundException e) {
@@ -378,13 +378,13 @@ public class AuctionHouse{
             if(temp != null){
                 if(response == Message.Response.SUCCESS){
                     try{
-                        temp.bankSignoff.put(true);
+                        temp.bankSignOff.put(true);
                     }catch (InterruptedException e){
                         e.printStackTrace();
                     }
                 }else if(response == Message.Response.INSUFFICIENT_FUNDS){
                     try{
-                        temp.bankSignoff.put(false);
+                        temp.bankSignOff.put(false);
                     }catch (InterruptedException e){
                         e.printStackTrace();
                     }
@@ -441,5 +441,12 @@ public class AuctionHouse{
      */
     public ArrayList<Item> getCatalogue(){
         return catalogue;
+    }
+
+    public ArrayList<String> getLog(){
+        return log;
+    }
+    public double getBalance(){
+        return balance;
     }
 }
