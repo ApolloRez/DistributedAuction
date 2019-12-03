@@ -252,7 +252,9 @@ public class AuctionHouse{
         }
         private void accept(){
             AuctionMessage accept = AuctionMessage.Builder.newB()
-                                    .type(AMType.ACCEPTANCE).build();
+                                    .type(AMType.ACCEPTANCE)
+                                    .list(catalogue) //added the updated catalogue to the message..
+                                    .build();
             sendOut(accept);
         }
 

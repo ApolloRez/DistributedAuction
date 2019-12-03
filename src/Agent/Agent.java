@@ -17,7 +17,7 @@ public class Agent {
 
 
     private ServerSocket bankServer = null;
-    private ServerSocket auctionServer = null;
+    private ServerSocket auctionServer = null; // do i even need these...
     private Socket bankClient = null;
     private Socket auctionClient = null;
 
@@ -39,6 +39,9 @@ public class Agent {
     private int auctionPort;
     private List<NetInfo> auctionHouses;
     private ArrayList<Item> catalogue = new ArrayList<Item>();
+
+    private Item attemptedBid;
+    private Double attemptedBidAmount;
     private ArrayList<Item> currentlyBidding = new ArrayList<Item>();
     private ArrayList<Item> wonItems = new ArrayList<Item>();
     private boolean activeBid;
@@ -49,6 +52,8 @@ public class Agent {
         bankPortNumber = portNumber;
 
     }
+
+
 
     public void setDisplay(AgentDisplay display) {
         this.display = display;
@@ -120,6 +125,14 @@ public class Agent {
                 .amount(deposit)
                 .send(accountNumber);
         sendToBank(message);
+
+    }
+
+    public void requestAHList() throws IOException {
+        Message message = new Message.Builder()
+                .command(Message.Command.GET_NET_INFO)
+                .send(accountNumber);
+        sendToBank(message);
     }
 
     public ArrayList<Item> getWonItems() {
@@ -158,16 +171,16 @@ public class Agent {
         }
 */
 
-            private void processBankMessage(Message message) {
+            private void processBankMessage(Message message) throws IOException {
                 if (message.getNetInfo() != null) {
                     auctionHouses = message.getNetInfo();
+                    display.printAHList(auctionHouses);
                 }
-                switch (message.getCommand()) {
-                    case REGISTER_CLIENT: {
-                        accountNumber = message.getAccountId();
-                        System.out.println("got it");
-                    }
+                if (message.getCommand()== Message.Command.REGISTER_CLIENT) {
+                    accountNumber = message.getAccountId();
+                    System.out.println("got it");
                 }
+
                 if (message.getResponse() != null) {
 
                     switch (message.getResponse()) {
@@ -175,7 +188,25 @@ public class Agent {
 
                             connectedToBank = true;
                             accountNumber = message.getAccountId();
-                            //balance = message.getAmount();
+                            balance = message.getAmount();
+                            switch (message.getCommand()) {
+                                case DEPOSIT: {
+                                    display.printDepositBalance();
+                                }
+                                case HOLD: {
+
+                                }
+                                case RELEASE_HOLD: {
+
+                                }
+                                case TRANSFER: {
+
+                                }
+                                case GET_AVAILABLE: {
+
+                                }
+
+                            }
                             break;
                         }
                         case ERROR: {
@@ -222,8 +253,10 @@ public class Agent {
                     .type(AuctionMessage.AMType.REGISTER).id(accountNumber).build();
             auctionOut.writeObject(message);
         }
-
+        // we need a de register with auction house
         public void deRegisterAuctionHouse() {
+          //  AuctionMessage message = AuctionMessage.Builder.newB()
+                //    .type(AuctionMessage.AMType.)
         }
 
         private void getAuctionNetInfo(int choice) {
@@ -233,6 +266,8 @@ public class Agent {
         }
 
         public void sendBidToAH(int choice, double doubleBid) throws IOException {
+            attemptedBid = catalogue.get(choice);
+            attemptedBidAmount = doubleBid;
             Double bid = doubleBid;
             AuctionMessage bidMessage = new AuctionMessage.Builder().newB()
                     .type(AuctionMessage.AMType.BID)
@@ -265,7 +300,7 @@ public class Agent {
                 }
             }
 
-            private void processAuctionMessage(AuctionMessage message) {
+            private void processAuctionMessage(AuctionMessage message) throws IOException {
                 if (message.getType() == AuctionMessage.AMType.ACCEPTANCE) {
                     activeBid = true;
                 }
@@ -275,16 +310,31 @@ public class Agent {
                 }
                 switch (message.getType()) {
                     case OUTBID: {
-
+                        // update which items the agent is know bidding on
+                        // if we have a bool about active bids we need to update that too
+                        for (Item item : currentlyBidding) {
+                            if (message.getItem()== item.getItemID()) {
+                                currentlyBidding.remove(item);
+                            }
+                        }
+                        display.auctionHouseMenu();
                     }
                     case WINNER: {
                         // need to determine how we are handling "winning an item"
                         //not that important.
+                        display.wonAnItem();
+                        display.auctionHouseMenu();
                     }
                     case REJECTION: {
+                        //print out insufficient funds or so
+                        display.auctionHouseMenu();
 
                     }
                     case ACCEPTANCE: {
+                        //update which items the agent is now biddin on
+                        currentlyBidding.add(attemptedBid);
+                        display.auctionHouseMenu();
+
 
 
                     }
@@ -300,26 +350,17 @@ public class Agent {
 
 
 
-        public void closeAgent() {
-            // make this two one for de registering with the bank and one for rereg
-            // with auction houses/
+        public void closeAgent() throws IOException {
+            Message message = new Message.Builder()
+                    .command(Message.Command.DEREGISTER_CLIENT)
+                    .send(accountNumber);
+            sendToBank(message);
         }
 
 
 
-        public boolean idToString() {
-            return false;
+        public String idToString() {
+            return accountNumber.toString();
         }
-
-        public String getItemString() {
-                return null;
-
-        }
-
-        public String getStringOfCurrentFloor() {
-            return null;
-        }
-
-
     }
 

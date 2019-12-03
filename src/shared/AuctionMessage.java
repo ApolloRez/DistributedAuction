@@ -23,6 +23,7 @@ public class AuctionMessage implements Serializable {
         REJECTION,  //Auction lets agent know their bid was denied
         OUTBID,     //Auction lets agent know their bid was out bidded
         WINNER,     //Auction lets agent know they won bid
+        DEREGISTER, //client de-registers from auction house
         UPDATE      //Auction sends updated catalogue to client
     }
     public static class Builder {
@@ -47,6 +48,10 @@ public class AuctionMessage implements Serializable {
         }
         public Builder id(UUID accountId) {
             this.accountId = accountId;
+            return this;
+        }
+        public Builder amount(Double amount) {
+            this.amount = amount;
             return this;
         }
         public static Builder newB(){

@@ -2,6 +2,7 @@ package Agent;
 
 import AuctionHouse.Item;
 import shared.NetInfo;
+import sun.nio.ch.Net;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,6 +29,12 @@ public class AgentDisplay {
 
     public void printBalance() {
         System.out.println("Current Balance: " + agent.getBalance());
+    }
+
+    public void printDepositBalance() throws IOException {
+        System.out.println("New Balance: " + agent.getBalance());
+        bankMenu();
+
     }
 
     public void startUp() throws IOException, InterruptedException {
@@ -65,7 +72,7 @@ public class AgentDisplay {
             printBalance();
             bankMenu();
         } else if (nextLine.equals("Agent")) {
-            System.out.println(agent.idToString());
+            System.out.println("ID: "+agent.idToString());
             System.out.println("Won Items:");
             for(Item item: agent.getWonItems()) {
                 System.out.println("- "+item.name());
@@ -86,7 +93,11 @@ public class AgentDisplay {
 
 
     private void auctionHouseList() throws IOException {
-        List<NetInfo> auctionHouses = agent.getAuctionHouses();
+        agent.requestAHList();
+
+    }
+
+    public void printAHList(List<NetInfo> auctionHouses) throws IOException {
         System.out.println("Auction Houses:");
         printBalance();
         int goBack = auctionHouses.size()+1;
@@ -155,13 +166,17 @@ public class AgentDisplay {
         if (depositAmount <= 1000 && depositAmount > 0) {
             int cast = depositAmount;
             agent.bankDeposit(cast);
-            System.out.println("Successful, new balance: "+agent.getBalance());
-            bankMenu();
+            //System.out.println("Successful, new balance: "+agent.getBalance());
+            //bankMenu();
         } else if (deposit == "Back") {
             bankMenu();
         } else {
             System.out.println("Sorry, try again");
             depositMenu();
         }
+    }
+
+    public void wonAnItem() {
+
     }
 }
