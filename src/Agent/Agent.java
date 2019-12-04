@@ -30,6 +30,7 @@ public class Agent {
     private ObjectOutputStream auctionOut;
 
     public AgentDisplay display;
+    public boolean run;
 
     public boolean connectedToBank;
     private double balance;
@@ -90,9 +91,10 @@ public class Agent {
                 .command(Message.Command.REGISTER_CLIENT)
                 .send(null);
         sendToBank(message);
+        run = true;
         Thread bankInThread = new Thread(new setBankIn());
         bankInThread.start();
-        new setBankIn();
+
         // need a new thread here right?
     }
 
@@ -120,9 +122,11 @@ public class Agent {
     }
 
     public void bankDeposit(double deposit) throws IOException {
+        System.out.println("Sending Deposit");
         Message message = new Message.Builder()
                 .command(Message.Command.DEPOSIT)
                 .amount(deposit)
+                .accountId(accountNumber)
                 .send(accountNumber);
         sendToBank(message);
 
@@ -148,8 +152,12 @@ public class Agent {
             System.out.println("listening to bank");
             try {
                 bankIn = new ObjectInputStream(bankClient.getInputStream());
-                message = (Message) bankIn.readObject(); //?
-                processBankMessage(message);
+                while(run) {
+                    message = (Message) bankIn.readObject(); //?
+                    System.out.println(message.toString());
+                    processBankMessage(message);
+                }
+
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
@@ -180,29 +188,42 @@ public class Agent {
                     accountNumber = message.getAccountId();
                     System.out.println("got it");
                 }
+                if (message.getAmount()!= null) {
+                    System.out.println("Balance Updated by Bank");
+                    balance = message.getAmount();
+                }
 
                 if (message.getResponse() != null) {
+
 
                     switch (message.getResponse()) {
                         case SUCCESS: {
 
                             connectedToBank = true;
-                            accountNumber = message.getAccountId();
-                            balance = message.getAmount();
+                            if (accountNumber == null) {
+                                accountNumber = message.getAccountId();
+                            }
+
                             switch (message.getCommand()) {
                                 case DEPOSIT: {
+                                    System.out.println("should call print deposit");
                                     display.printDepositBalance();
+                                    break;
                                 }
                                 case HOLD: {
-
+                                    break;
                                 }
                                 case RELEASE_HOLD: {
+                                    break;
 
                                 }
                                 case TRANSFER: {
+                                    break;
 
                                 }
                                 case GET_AVAILABLE: {
+                                    display.printBalance();
+                                    break;
 
                                 }
 

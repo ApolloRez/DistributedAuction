@@ -33,7 +33,6 @@ public class AgentDisplay {
 
     public void printDepositBalance() throws IOException {
         System.out.println("New Balance: " + agent.getBalance());
-        bankMenu();
 
     }
 
@@ -100,7 +99,7 @@ public class AgentDisplay {
     public void printAHList(List<NetInfo> auctionHouses) throws IOException {
         System.out.println("Auction Houses:");
         printBalance();
-        int goBack = auctionHouses.size()+1;
+        int goBack = auctionHouses.size();
         for (int i=0; i < auctionHouses.size(); i++) {
             System.out.println("["+i+"] " + auctionHouses.get(i).toString());
         }
@@ -162,13 +161,19 @@ public class AgentDisplay {
     private void depositMenu() throws IOException {
         System.out.println("How much would you like to deposit? [1-1000]/[Back]");
         String deposit = scanner.nextLine();
-        Integer depositAmount = Integer.parseInt(deposit);
-        if (depositAmount <= 1000 && depositAmount > 0) {
-            int cast = depositAmount;
+        if (deposit.equals("Back")) {
+            bankMenu();
+        }
+        int cast = 0;
+        try {
+            Integer depositAmount = Integer.parseInt(deposit);
+            cast = depositAmount;
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+        }
+        if (cast <= 1000 && cast > 0) {
             agent.bankDeposit(cast);
             //System.out.println("Successful, new balance: "+agent.getBalance());
-            //bankMenu();
-        } else if (deposit == "Back") {
             bankMenu();
         } else {
             System.out.println("Sorry, try again");
