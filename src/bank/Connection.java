@@ -160,6 +160,7 @@ public class Connection implements Runnable {
                     }
                     case GET_NET_INFO: {
                         writeMessage(new Message.Builder()
+                                .command(Message.Command.GET_NET_INFO)
                                 .netInfo(bank.getAuctionHouseNetInfo())
                                 .send(bank.getId()));
                         break;
@@ -167,6 +168,7 @@ public class Connection implements Runnable {
                     // UUID - senderId
                     case GET_RESERVED: {
                         writeMessage(new Message.Builder()
+                                .command(Message.Command.GET_RESERVED)
                                 .amount(bank.getHeldFunds(message.getSender()))
                                 .send(bank.getId()));
                         break;
@@ -215,7 +217,11 @@ public class Connection implements Runnable {
      * @throws IOException Cannot write to ObjectOutputStream
      */
     private void writeMessage(Message message) throws IOException {
-        connectionLoggerService.add("Bank : " + message.toString());
+        Message.Command temp = message.getCommand();
+        if(temp!= Message.Command.GET_RESERVED&& temp!= Message.Command.GET_AVAILABLE){
+            connectionLoggerService.add("Bank : " + message.toString());
+        }
+        objectOutputStream.reset();
         objectOutputStream.writeObject(message);
     }
 
@@ -228,7 +234,10 @@ public class Connection implements Runnable {
      */
     private Message readMessage() throws IOException, ClassNotFoundException {
         Message message = (Message) objectInputStream.readObject();
-        connectionLoggerService.add("Client : " + message.toString());
+        Message.Command temp = message.getCommand();
+        if(temp!= Message.Command.GET_RESERVED&& temp!= Message.Command.GET_AVAILABLE){
+            connectionLoggerService.add("Client : " + message.toString());
+        }
         return message;
     }
 }

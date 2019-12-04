@@ -34,7 +34,7 @@ public class AuctionGui extends Application {
 
         topWindowSetup();
         setupLog();
-        Scene scene = new Scene(bPane,400,400);
+        Scene scene = new Scene(bPane,500,450);
         stage.setOnCloseRequest(e -> {
             Platform.exit();
             System.exit(0);
@@ -76,7 +76,7 @@ public class AuctionGui extends Application {
 
     public void setupLog(){
         ScrollPane logDisplay = new ScrollPane();
-        logDisplay.setPrefViewportHeight(100);
+        logDisplay.setPrefViewportHeight(150);
         logDisplay.setFitToWidth(true);
         logDisplay.setContent(vLog);
         bPane.setBottom(logDisplay);
@@ -86,7 +86,6 @@ public class AuctionGui extends Application {
         connect.setDisable(true);
         done = false;
         String bankIp = ipInputField.getText();
-        System.out.println(bankIp);
         int bankPort = Integer.parseInt(portInput.getText());
         int serverPort = Integer.parseInt(serverInput.getText());
         auction = new AuctionHouse(bankIp,bankPort,serverPort);
@@ -146,7 +145,6 @@ public class AuctionGui extends Application {
             HBox guiItem = new HBox();
             if(item.getBidder() != null){
                 noBidding = true;
-                System.out.println(item.getBidder());
             }
             String info = item.name();
             info = info.concat("         ");
