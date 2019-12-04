@@ -63,7 +63,7 @@ public class Agent {
         this.display = display;
     }
 
-    public ArrayList<Item> getCatalogue() {
+    public ArrayList<Item> getStoredCat() {
         return catalogue;
     }
 
@@ -185,6 +185,7 @@ public class Agent {
 
             private void processBankMessage(Message message) throws IOException {
                 if (message.getNetInfo() != null) {
+                    System.out.println("Updated AH LIst");
                     auctionHouses = message.getNetInfo();
              //       display.printAHList(auctionHouses);
                 }
@@ -321,7 +322,7 @@ public class Agent {
                     message = (AuctionMessage) auctionIn.readObject(); //?
                     processAuctionMessage(message);
                     if (catalogueUpdated) {
-                        display.auctionHouseMenu();
+                    //    display.auctionHouseMenu();
                     }
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
@@ -339,6 +340,7 @@ public class Agent {
                 switch (message.getType()) {
                     case REGISTER: {
                         connectedToAH = true;
+                        break;
                     }
                     case OUTBID: {
                         // update which items the agent is know bidding on
@@ -348,24 +350,26 @@ public class Agent {
                                 currentlyBidding.remove(item);
                             }
                         }
-                        display.auctionHouseMenu();
+                        break;
+             //           display.auctionHouseMenu();
                     }
                     case WINNER: {
                         // need to determine how we are handling "winning an item"
                         //not that important.
                         display.wonAnItem();
                         display.auctionHouseMenu();
+                        break;
                     }
                     case REJECTION: {
                         //print out insufficient funds or so
                         display.auctionHouseMenu();
-
+                        break;
                     }
                     case ACCEPTANCE: {
                         //update which items the agent is now biddin on
                         currentlyBidding.add(attemptedBid);
                         display.auctionHouseMenu();
-
+                        break;
 
 
                     }

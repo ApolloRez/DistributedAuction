@@ -2,11 +2,9 @@ package Agent;
 
 import AuctionHouse.Item;
 import shared.NetInfo;
-import sun.nio.ch.Net;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -126,10 +124,10 @@ public class AgentDisplay {
         System.out.println("Items currently up for bid:");
         printBalance();
         printCurrentItems();
-        int goBack = 1 + agent.getCatalogue().size();
+        int goBack = 1 + agent.getStoredCat().size();
         System.out.println("["+goBack+"] Go back]");
         choice = scanner.nextInt();
-        if (choice == agent.getCatalogue().size()+1) {
+        if (choice == agent.getStoredCat().size()+1) {
             agent.deRegisterAuctionHouse();
             bankMenu();
         } else {
@@ -143,7 +141,7 @@ public class AgentDisplay {
 
 
     private void printCurrentItems() {
-        ArrayList<Item> catalogue = agent.getCatalogue();
+        ArrayList<Item> catalogue = agent.getStoredCat();
         for (int i=0; i < catalogue.size(); i++) {
             System.out.println("["+i+"]"+catalogue.get(i).name());
 
