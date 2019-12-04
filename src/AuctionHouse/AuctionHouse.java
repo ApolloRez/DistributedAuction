@@ -348,9 +348,12 @@ public class AuctionHouse{
         UUID bidder = item.getBidder();
         UUID itemID = item.getItemID();
         AgentProxy agent = agentSearch(bidder);
-        if(agent != null){
-            agent.winner(item.getCurrentBid(),itemID);
+        if (agent != null) {
+            agent.winner(item.getCurrentBid(), itemID);
         }
+        Message release = new Message.Builder().command(Command.RELEASE_HOLD)
+                .amount(item.getCurrentBid()).accountId(bidder).send(auctionId);
+        sendToBank(release);
         catalogue.remove(item);
     }
 
@@ -405,19 +408,33 @@ public class AuctionHouse{
                 case GET_AVAILABLE:
                     bankBalance(message);
                     break;
-                default: System.out.println("uh oh");
+//                case TRANSFER:
+//                    transfer(message);
+//                    break;
+                default:
+                    System.out.println("uh oh");
             }
         }
 
-        private void bankBalance(Message message){
+//        private void transfer(Message message){
+//            UUID bidder = message.getAccountId();
+//            double amount = message.getAmount();
+//            balance += amount;
+//            Message release = new Message.Builder().command(Command.RELEASE_HOLD)
+//                    .amount(amount).accountId(bidder).send(auctionId);
+//            sendToBank(release);
+//        }
+
+        private void bankBalance(Message message) {
             balance = message.getAmount();
         }
-        private void hold(Message message){
+
+        private void hold(Message message) {
             UUID bidder = message.getAccountId();
             Message.Response response = message.getResponse();
             AgentProxy temp = agentSearch(bidder);
-            if(temp != null){
-                if(response == Message.Response.SUCCESS){
+            if (temp != null) {
+                if (response == Message.Response.SUCCESS) {
                     try{
                         temp.bankSignOff.put(true);
                     }catch (InterruptedException e){

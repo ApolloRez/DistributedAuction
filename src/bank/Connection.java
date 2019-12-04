@@ -141,12 +141,14 @@ public class Connection implements Runnable {
                                     .response(Message.Response.SUCCESS)
                                     .command(Message.Command.TRANSFER)
                                     .amount(message.getAmount())
+                                    .accountId(message.getAccountId())
                                     .send(bank.getId()));
                         } else {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.ERROR)
                                     .command(Message.Command.TRANSFER)
                                     .amount(message.getAmount())
+                                    .accountId(message.getAccountId())
                                     .send(bank.getId()));
                         }
                         break;
