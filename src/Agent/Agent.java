@@ -82,6 +82,8 @@ public class Agent {
         // create a message and send it to the bank using the message class...
         try {
             System.out.println("Connecting to the bank!");
+            System.out.println(bankHostName);
+            System.out.println(bankPortNumber);
             bankClient = new Socket(bankHostName, bankPortNumber);
             System.out.println("Connected");
             bankOut = new ObjectOutputStream(bankClient.getOutputStream());
@@ -116,7 +118,6 @@ public class Agent {
     private void sendToBank(Message message) throws IOException {
         try {
             bankOut.writeObject(message);
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -183,7 +184,7 @@ public class Agent {
             private void processBankMessage(Message message) throws IOException {
                 if (message.getNetInfo() != null) {
                     auctionHouses = message.getNetInfo();
-                    display.printAHList(auctionHouses);
+             //       display.printAHList(auctionHouses);
                 }
                 if (message.getCommand()== Message.Command.REGISTER_CLIENT) {
                     accountNumber = message.getAccountId();

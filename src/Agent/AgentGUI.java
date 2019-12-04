@@ -3,10 +3,13 @@ package Agent;
 import AuctionHouse.Item;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
+import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -26,8 +29,8 @@ import java.io.IOException;
 
 public class AgentGUI extends Application {
 
-    private String bankIP;
-    private int bankPort;
+    private String bankIPString;
+    private int bankPortNumber;
     private Agent agent;
     private BorderPane bPane = new BorderPane();
     private BorderPane bankPane = new BorderPane();
@@ -37,6 +40,7 @@ public class AgentGUI extends Application {
     private Button connect = new Button("connect");
     private Button disconnect = new Button("Shutdown");
     private Stage stage;
+    private boolean waitingToConnect = true;
 
 
 
@@ -89,6 +93,10 @@ public class AgentGUI extends Application {
 
         EventHandler<ActionEvent> event = e -> {
             try {
+                bankIPString = ipInputField.getText();
+                System.out.println(bankIPString);
+                String portString = portInput.getText();
+                bankPortNumber = Integer.parseInt(portString);
                 createAgent();
             } catch (IOException ex) {
                 ex.printStackTrace();
@@ -102,12 +110,12 @@ public class AgentGUI extends Application {
     }
 
     private void createAgent() throws IOException, InterruptedException {
-        agent = new Agent(bankIP, bankPort);
+        agent = new Agent(bankIPString, bankPortNumber);
         agent.registerBank();
-        wait(250); // in case the bank is slow???
-        if (agent.connectedToBank) {
+     //   if (agent.connectedToBank) {
+     //       System.out.println("calling bankmenu");
             setBankMenuWindow();
-        }
+       // }
         /*
         create the agent with the netinfo from before,
         have the agent register with bank, recall these are seprate
@@ -126,8 +134,11 @@ public class AgentGUI extends Application {
     private void setBankMenuWindow() throws IOException {
         VBox options = new VBox();
         options.setAlignment(Pos.CENTER_RIGHT);
-        Label balanceLabel = new Label(getBalanceString());
-        options.getChildren().add(balanceLabel);
+        Label label = new Label(getBalanceString());
+        options.getChildren().add(label);
+
+
+
         Button deposit = new Button("Deposit");
         EventHandler<ActionEvent> event = e -> {
             depositPopUp();
@@ -146,8 +157,10 @@ public class AgentGUI extends Application {
         auctionList.setAlignment(Pos.CENTER_LEFT);
         ListView<String> auctionHouses = new ListView<String>();
         ObservableList<String> houses = FXCollections.observableArrayList();
-        for (NetInfo netInfo : agent.getAuctionHouses()) {
-            houses.add(netInfo.toString());
+        if (agent.getAuctionHouses()!= null) {
+            for (NetInfo netInfo : agent.getAuctionHouses()) {
+                houses.add(netInfo.toString());
+            }
         }
         auctionHouses.setItems(houses);
         auctionHouses.setPrefHeight(300);
@@ -191,7 +204,11 @@ public class AgentGUI extends Application {
         bankPane.setLeft(auctionList);
         bankPane.setRight(options);
         stage.setScene(bankMenuScene);
+
     }
+
+
+
 
     private void setAuctionHouseMenu() {
         // just a list of items just like the auction houses list
@@ -263,7 +280,8 @@ public class AgentGUI extends Application {
 
     private void depositPopUp() {
         Popup makeADeposit = new Popup();
-        makeADeposit.getContent().add(new Label("Enter Deposit Amount: "));
+        VBox depositWindow = new VBox();
+        depositWindow.getChildren().add(new Label("Enter Deposit Amount: "));
         TextField amount = new TextField();
         Button back = new Button("Cancel");
         Button submit = new Button ("Confirm");
@@ -281,9 +299,10 @@ public class AgentGUI extends Application {
         };
         back.setOnAction(cancel);
         submit.setOnAction(confirm);
-        makeADeposit.getContent().add(amount);
-        makeADeposit.getContent().add(back);
-        makeADeposit.getContent().add(submit);
+        depositWindow.getChildren().add(amount);
+        depositWindow.getChildren().add(back);
+        depositWindow.getChildren().add(submit);
+        makeADeposit.getContent().add(depositWindow);
         makeADeposit.show(stage);
     }
 

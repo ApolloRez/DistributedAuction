@@ -164,9 +164,9 @@ public class AgentDisplay {
         if (deposit.equals("Back")) {
             bankMenu();
         }
-        int cast = 0;
+        double cast = 0;
         try {
-            Integer depositAmount = Integer.parseInt(deposit);
+            Double depositAmount = Double.parseDouble(deposit);
             cast = depositAmount;
         } catch (NumberFormatException e) {
             e.printStackTrace();
