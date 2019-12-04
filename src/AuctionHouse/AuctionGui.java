@@ -14,11 +14,12 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+
 import java.util.ArrayList;
 
 public class AuctionGui extends Application {
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("10.1.10.57");
+    private TextField ipInputField = new TextField("10.84.119.178");
     private TextField portInput = new TextField("4444");
     private TextField serverInput = new TextField("4500");
     private ArrayList<Item> catalogue = new ArrayList<>();
@@ -172,7 +173,7 @@ public class AuctionGui extends Application {
         }
     }
 
-    public static void main(String args[]){
+    public static void main(String[] args) {
         launch(args);
     }
 }

@@ -102,6 +102,7 @@ public class Connection implements Runnable {
                                     .amount(message.getAmount())
                                     .accountId(message.getAccountId())
                                     .send(bank.getId()));
+                            System.out.println(message.getAmount());
                         } else {
                             writeMessage(new Message.Builder()
                                     .response(Message.Response.INSUFFICIENT_FUNDS)

@@ -3,6 +3,7 @@ package bank;
 import bank.service.ConnectionLoggerService;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 
 
@@ -27,8 +28,7 @@ public class BankServer implements Runnable {
         isRunning = true;
         connectionLoggerService = ConnectionLoggerService.getInstance();
         connectionLoggerService.add("Bank Server Started on "
-                + serverSocket.getInetAddress().getLocalHost().getHostName()
-                + " Inet : " + serverSocket.getInetAddress().getHostAddress());
+                + InetAddress.getLocalHost().getHostName());
     }
 
     /**
@@ -43,7 +43,6 @@ public class BankServer implements Runnable {
         while (isRunning) {
             try {
                 Connection connection = new Connection(serverSocket.accept(), this.bank);
-
             } catch (IOException e) {
                 e.printStackTrace();
             }

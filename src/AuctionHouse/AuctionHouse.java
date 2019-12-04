@@ -3,15 +3,17 @@ package AuctionHouse;
 import shared.AuctionMessage;
 import shared.AuctionMessage.AMType;
 import shared.Message;
-import shared.NetInfo;
 import shared.Message.Command;
+import shared.NetInfo;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.*;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -235,23 +237,23 @@ public class AuctionHouse{
             if(amount > value){
                 Message requestHold = new Message.Builder()
                         .command(Command.HOLD)
-                        .accountId(bidderId).amount(value).send(this.agentID);
+                        .accountId(bidderId).amount(amount).send(this.agentID);
 
                 try{
-                    out.writeObject(requestHold);
+                    sendToBank(requestHold);
                     Boolean success = bankSignOff.take();
-                    if(success){
+                    if (success) {
                         UUID oldBidder = bidItem.getBidder();
-                        if(oldBidder != null){
-                            release(oldBidder,value);
-                            outBid(oldBidder,bidItem.getItemID());
+                        if (oldBidder != null) {
+                            release(oldBidder, value);
+                            outBid(oldBidder, bidItem.getItemID());
                         }
-                        bidItem.outBid(bidderId,amount);
-                        accept(bidItem.getItemID(),bidItem.name());
-                    }else{
-                       reject(itemID);
+                        bidItem.outBid(bidderId, amount);
+                        accept(bidItem.getItemID(), bidItem.name());
+                    } else {
+                        reject(itemID);
                     }
-                }catch (IOException | InterruptedException e){
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }else{

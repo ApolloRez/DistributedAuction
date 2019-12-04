@@ -30,7 +30,7 @@ public class AuctionMessage implements Serializable {
         private AMType type = null;
         private ArrayList<Item> catalogue = null;
         private Double amount = null;
-        private UUID itemID= null;
+        private UUID itemID = null;
         private UUID accountId = null;
 
         public Builder type(AMType type) {
@@ -38,18 +38,26 @@ public class AuctionMessage implements Serializable {
             return this;
         }
 
-        public Builder list(ArrayList<Item> catalogue){
+        public Builder amount(double amount) {
+            this.amount = amount;
+            return this;
+        }
+
+        public Builder list(ArrayList<Item> catalogue) {
             this.catalogue = catalogue;
             return this;
         }
-        public Builder item(UUID itemID){
-            this.itemID  = itemID;
+
+        public Builder item(UUID itemID) {
+            this.itemID = itemID;
             return this;
         }
+
         public Builder id(UUID accountId) {
             this.accountId = accountId;
             return this;
         }
+
         public Builder amount(Double amount) {
             this.amount = amount;
             return this;
