@@ -3,15 +3,17 @@ package AuctionHouse;
 import shared.AuctionMessage;
 import shared.AuctionMessage.AMType;
 import shared.Message;
-import shared.NetInfo;
 import shared.Message.Command;
+import shared.NetInfo;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.*;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -235,23 +237,23 @@ public class AuctionHouse{
             if(amount > value){
                 Message requestHold = new Message.Builder()
                         .command(Command.HOLD)
-                        .accountId(bidderId).amount(value).send(this.agentID);
+                        .accountId(bidderId).amount(amount).send(this.agentID);
 
                 try{
-                    out.writeObject(requestHold);
+                    sendToBank(requestHold);
                     Boolean success = bankSignOff.take();
-                    if(success){
+                    if (success) {
                         UUID oldBidder = bidItem.getBidder();
-                        if(oldBidder != null){
-                            release(oldBidder,value);
-                            outBid(oldBidder,bidItem.getItemID());
+                        if (oldBidder != null) {
+                            release(oldBidder, value);
+                            outBid(oldBidder, bidItem.getItemID());
                         }
-                        bidItem.outBid(bidderId,amount);
-                        accept(bidItem.getItemID(),bidItem.name());
-                    }else{
-                       reject(itemID);
+                        bidItem.outBid(bidderId, amount);
+                        accept(bidItem.getItemID(), bidItem.name());
+                    } else {
+                        reject(itemID);
                     }
-                }catch (IOException | InterruptedException e){
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }else{
@@ -346,9 +348,12 @@ public class AuctionHouse{
         UUID bidder = item.getBidder();
         UUID itemID = item.getItemID();
         AgentProxy agent = agentSearch(bidder);
-        if(agent != null){
-            agent.winner(item.getCurrentBid(),itemID);
+        if (agent != null) {
+            agent.winner(item.getCurrentBid(), itemID);
         }
+        Message release = new Message.Builder().command(Command.RELEASE_HOLD)
+                .amount(item.getCurrentBid()).accountId(bidder).send(auctionId);
+        sendToBank(release);
         catalogue.remove(item);
     }
 
@@ -403,19 +408,33 @@ public class AuctionHouse{
                 case GET_AVAILABLE:
                     bankBalance(message);
                     break;
-                default: System.out.println("uh oh");
+//                case TRANSFER:
+//                    transfer(message);
+//                    break;
+                default:
+                    System.out.println("uh oh");
             }
         }
 
-        private void bankBalance(Message message){
+//        private void transfer(Message message){
+//            UUID bidder = message.getAccountId();
+//            double amount = message.getAmount();
+//            balance += amount;
+//            Message release = new Message.Builder().command(Command.RELEASE_HOLD)
+//                    .amount(amount).accountId(bidder).send(auctionId);
+//            sendToBank(release);
+//        }
+
+        private void bankBalance(Message message) {
             balance = message.getAmount();
         }
-        private void hold(Message message){
+
+        private void hold(Message message) {
             UUID bidder = message.getAccountId();
             Message.Response response = message.getResponse();
             AgentProxy temp = agentSearch(bidder);
-            if(temp != null){
-                if(response == Message.Response.SUCCESS){
+            if (temp != null) {
+                if (response == Message.Response.SUCCESS) {
                     try{
                         temp.bankSignOff.put(true);
                     }catch (InterruptedException e){

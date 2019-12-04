@@ -20,7 +20,6 @@ public class Account {
     }
 
     public double getAvailableBalance() {
-        System.out.println(availableBalance);
         return availableBalance;
     }
 
@@ -40,6 +39,7 @@ public class Account {
     public void deposit(double amount) {
         System.out.println("depositing : " + amount);
         availableBalance += amount;
+        System.out.println("Total Balance: " + availableBalance);
     }
 
     /**
