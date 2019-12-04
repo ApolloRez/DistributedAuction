@@ -186,6 +186,7 @@ public class Agent {
                 }
                 if (message.getCommand()== Message.Command.REGISTER_CLIENT) {
                     accountNumber = message.getAccountId();
+                    connectedToBank = true;
                     System.out.println("got it");
                 }
                 if (message.getAmount()!= null) {
@@ -199,7 +200,6 @@ public class Agent {
                     switch (message.getResponse()) {
                         case SUCCESS: {
 
-                            connectedToBank = true;
                             if (accountNumber == null) {
                                 accountNumber = message.getAccountId();
                             }
