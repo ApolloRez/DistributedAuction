@@ -1,10 +1,12 @@
 package Agent;
 
+import AuctionHouse.Item;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -29,7 +31,9 @@ public class AgentGUI extends Application {
     private Agent agent;
     private BorderPane bPane = new BorderPane();
     private BorderPane bankPane = new BorderPane();
+    private BorderPane auctionPane = new BorderPane();
     private Scene bankMenuScene;
+    private Scene auctionMenuScene;
     private Button connect = new Button("connect");
     private Button disconnect = new Button("Shutdown");
     private Stage stage;
@@ -46,6 +50,7 @@ public class AgentGUI extends Application {
         netInfoWindow();
         Scene netInfoScene = new Scene(bPane, 400, 400);
         bankMenuScene = new Scene(bankPane, 400, 400);
+        auctionMenuScene = new Scene(auctionPane, 400,400);
         stage.setOnCloseRequest(e -> {
             Platform.exit();
             System.exit(0);
@@ -70,7 +75,7 @@ public class AgentGUI extends Application {
 
     private void netInfoWindow() {
         HBox netInfoWindow = new HBox();
-        netInfoWindow.setAlignment(Pos.BOTTOM_CENTER);
+        netInfoWindow.setAlignment(Pos.TOP_CENTER);
         VBox bankIP = new VBox();
         Text ipText = new Text("Bank IP");
         bankIP.getChildren().addAll(ipText,ipInputField);
@@ -156,7 +161,20 @@ public class AgentGUI extends Application {
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
-            setAuctionHouseMenu();
+            try {
+                wait(250);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+            if (agent.getConnectedToAH()) {
+                setAuctionHouseMenu();
+            } else {
+                try {
+                    setBankMenuWindow();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
         };
         select.setOnAction(connectToAH);
         EventHandler<ActionEvent> refreshWindow = e -> {
@@ -170,10 +188,60 @@ public class AgentGUI extends Application {
         auctionList.getChildren().add(auctionHouses);
         auctionList.getChildren().add(refresh);
         auctionList.getChildren().add(select);
+        bankPane.setLeft(auctionList);
+        bankPane.setRight(options);
         stage.setScene(bankMenuScene);
     }
 
     private void setAuctionHouseMenu() {
+        // just a list of items just like the auction houses list
+        // a bid button and pop up for bidding
+        //make sure there is a strong way to update it...
+        VBox itemList = new VBox();
+        itemList.setAlignment(Pos.CENTER);
+        ListView<String> itemsList = new ListView<String>();
+        ObservableList<String> itemStrings = FXCollections.observableArrayList();
+        for (Item item : agent.getCatalogue()) {
+            itemStrings.add(item.toString());
+        }
+        itemsList.setItems(itemStrings);
+        itemList.setPrefHeight(300);
+        itemList.setMaxWidth(250);
+        Button bidButton = new Button("Bid");
+        EventHandler<ActionEvent> bid = e -> {
+            int itemChoice = itemsList.getFocusModel().getFocusedIndex();
+            bidPopUp(agent.getCatalogue().get(itemChoice), itemChoice);
+        };
+        bidButton.setOnAction(bid);
+        itemList.getChildren().add(itemsList);
+        itemList.getChildren().add(bidButton);
+        auctionPane.setCenter(itemList);
+        stage.setScene(auctionMenuScene);
+    }
+
+    private void bidPopUp(Item item, int choice) {
+        Popup bid = new Popup();
+        bid.getContent().add(new Label("Item: "+item.toString()));
+        TextField userBid = new TextField();
+        Button bidButton = new Button("Bid");
+        Button back = new Button("Cancel");
+        EventHandler<ActionEvent> bidEvent = e -> {
+            try {
+                double amount = Double.parseDouble(userBid.getText());
+                agent.sendBidToAH(choice,amount);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        };
+        EventHandler<ActionEvent> cancel = e -> {
+            bid.hide();
+        };
+        bidButton.setOnAction(bidEvent);
+        back.setOnAction(cancel);
+        bid.getContent().add(userBid);
+        bid.getContent().add(bidButton);
+        bid.getContent().add(back);
+        bid.show(stage);
     }
 
     private String getBalanceString() {

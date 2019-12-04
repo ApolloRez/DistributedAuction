@@ -41,6 +41,7 @@ public class Agent {
     private List<NetInfo> auctionHouses;
     private ArrayList<Item> catalogue = new ArrayList<Item>();
 
+    private boolean connectedToAH;
     private Item attemptedBid;
     private Double attemptedBidAmount;
     private ArrayList<Item> currentlyBidding = new ArrayList<Item>();
@@ -269,6 +270,9 @@ public class Agent {
             }
         }
 
+        public boolean getConnectedToAH() {
+            return connectedToAH;
+        }
         public void registerAuctionHouse() throws IOException {
             AuctionMessage message = AuctionMessage.Builder.newB()
                     .type(AuctionMessage.AMType.REGISTER).id(accountNumber).build();
@@ -330,6 +334,9 @@ public class Agent {
                     catalogueUpdated = true;
                 }
                 switch (message.getType()) {
+                    case REGISTER: {
+                        connectedToAH = true;
+                    }
                     case OUTBID: {
                         // update which items the agent is know bidding on
                         // if we have a bool about active bids we need to update that too
