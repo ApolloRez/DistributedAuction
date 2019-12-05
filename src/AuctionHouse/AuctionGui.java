@@ -18,11 +18,33 @@ import javafx.stage.Stage;
 
 import java.util.ArrayList;
 
+/**
+ * @author Steven Chase
+ * This class is dedicated to displaying the AuctionHouse object with items for
+ * sale, log of activity, id of auction house, and bank balance
+ * of auction house. It also provides some UI for interaction/input.
+ */
 public class AuctionGui extends Application {
+    /**
+     * bPane: BorderPane holding everything.
+     * ipInputField: textfield to input ip of bank
+     * portInput: TextField to input port number of bank
+     * serverInput: TextField to input desired port number of auction server
+     * catalogue: items currently for sale at the auction house
+     * listDisplay: VBox for displaying the current items for sale with info
+     * auction: the auction house
+     * disconnect: button to shutdown the auction house
+     * connect: button connect to the bank with given ip and port number
+     * vLog: VBox for displaying auction house log of activity
+     * id: Text for displaying auction house id
+     * balance: Text for displaying balance of auction house
+     * log: List of incoming/outgoing messages
+     * done: boolean to end the program
+     */
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("10.82.13.237");
-    private TextField portInput = new TextField("4444");
-    private TextField serverInput = new TextField("4500");
+    private TextField ipInputField = new TextField("0.0.0.0");
+    private TextField portInput = new TextField("");
+    private TextField serverInput = new TextField("");
     private ArrayList<Item> catalogue = new ArrayList<>();
     private VBox listDisplay = new VBox();
     private AuctionHouse auction;
@@ -33,6 +55,11 @@ public class AuctionGui extends Application {
     private Text balance = new Text("balance: ");
     private ArrayList<String> log = new ArrayList<>();
     private boolean done = false;
+
+    /**
+     * starts the Gui
+     * @param stage the stage
+     */
     @Override
     public void start(Stage stage) {
         topWindowSetup();
@@ -52,6 +79,9 @@ public class AuctionGui extends Application {
         stage.show();
     }
 
+    /**
+     * setups the top window of bPane along with the UI
+     */
     private void topWindowSetup(){
         HBox topWindow = new HBox();
         topWindow.setAlignment(Pos.CENTER);
@@ -81,6 +111,9 @@ public class AuctionGui extends Application {
         bPane.setTop(topWindow);
     }
 
+    /**
+     * setups the Left port of bPane with id, balance
+     */
     private void setupLeftWindow(){
         VBox left = new VBox();
         left.setSpacing(10);
@@ -89,6 +122,9 @@ public class AuctionGui extends Application {
         bPane.setLeft(left);
     }
 
+    /**
+     * setups the log for display
+     */
     private void setupLog(){
         ScrollPane logDisplay = new ScrollPane();
         logDisplay.setPrefViewportHeight(150);
@@ -97,19 +133,27 @@ public class AuctionGui extends Application {
         bPane.setBottom(logDisplay);
     }
 
+    /**
+     * called when the "connect" button is pressed. This method
+     * starts the ui with the given input from the TextFields and starts
+     * the uiUpdater thread
+     */
     private void createAuctionHouse(){
         connect.setDisable(true);
         done = false;
         String bankIp = ipInputField.getText();
         int bankPort = Integer.parseInt(portInput.getText());
         int serverPort = Integer.parseInt(serverInput.getText());
-        System.out.println("Connecting");
         auction = new AuctionHouse(bankIp,bankPort,serverPort);
         Thread thread = new Thread(uiUpdater);
         thread.setDaemon(true);
         thread.start();
     }
 
+    /**
+     * Setups the VBox used to display the catalogue of AuctionHouse Items for
+     * sale
+     */
     private void setupCatalogue(){
         ScrollPane display = new ScrollPane();
         listDisplay.setSpacing(5);
@@ -121,6 +165,10 @@ public class AuctionGui extends Application {
         BorderPane.setAlignment(display,Pos.CENTER);
     }
 
+    /**
+     * This Runnable updates the display of the Gui, but it checks to make
+     * sure the Auction House successfully registered with the bank.
+     */
     private Runnable uiUpdater = () ->{
         Runnable updater = this::update;
         if(auction.checkRegistration()){
@@ -142,13 +190,24 @@ public class AuctionGui extends Application {
         }
     };
 
+    /**
+     * begins shutting down the auction house and prepares for a reset.
+     */
     private void shutdown(){
         auction.shutdown();
         done = true;
         connect.setDisable(false);
         disconnect.setDisable(true);
     }
+
+    /**
+     * used to keep track of what index the vLog would be at if it was a List
+     */
     private int displayIndex = 0;
+    /**
+     * looping method that updates the display with the current information.
+     * In this case it updates the catalogue, balance, and log.
+     */
     private void update(){
         listDisplay.getChildren().clear();
         int size = log.size();
@@ -163,6 +222,13 @@ public class AuctionGui extends Application {
         balance.setText("Balance: "+auction.getBalance());
         disconnect.setDisable(noBidding);
     }
+
+    /**
+     * updates the display with the current catalogue (time left included).
+     * Method also acts a way to check if there are any bidders, and
+     * prevents shutdown if it finds any
+     * @return returns true if a bidder was found, false otherwise
+     */
     private Boolean updateCatalogue(){
         boolean noBidding = false;
         for (Item item : catalogue) {
@@ -185,13 +251,22 @@ public class AuctionGui extends Application {
     }
 
 
+    /**
+     * method to clean up the display after shutting down
+     */
     private void finish(){
         listDisplay.getChildren().clear();
         log.clear();
         vLog.getChildren().clear();
+        id.setText("ID: ");
         displayIndex = 0;
     }
 
+    /**
+     * Checks whether an agent bid on the item
+     * @param item the item being check
+     * @return true if there is a bidder, false otherwise
+     */
     private String getStatus(Item item){
         if(item.getBidder() != null){
             return item.getBidderIdFour();
@@ -200,6 +275,10 @@ public class AuctionGui extends Application {
         }
     }
 
+    /**
+     * creates and launches the guid
+     * @param args string args(none needed)
+     */
     public static void main(String[] args) {
         launch(args);
     }
