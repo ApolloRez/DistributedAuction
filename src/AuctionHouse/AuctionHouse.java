@@ -16,53 +16,66 @@ import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Steven Chase
  * This class holds the logic/communication of the Auction House.
  */
 public class AuctionHouse{
-    private ServerSocket server;
-    private Socket auctionClient;
-    private ObjectInputStream input;
-    private ObjectOutputStream out;
-    private ItemList list;
+    private ServerSocket server; //ServerSocket for agent communication
+    private Socket auctionClient; //Socket for bank communication
+    private ObjectInputStream input;//stream to receive messages to Auction
+    private ObjectOutputStream out; //output stream to send messages
+    private ItemList list; //List of possible item names
     private ArrayList<Item> catalogue = new ArrayList<>();
+    //list of items currently for sale
     private List<AgentProxy> activeAgents = new LinkedList<>();
-    private ArrayList<String> log;
-    private double balance = 0.0;
-    private boolean run = true;
-    private UUID auctionId;
-    private String ip;
-    private int port;
+    //List of currently connected agents.
+    private BlockingQueue<Boolean> check = new LinkedBlockingDeque<>();
+    //Blocking queue used for AuctionGui communication
+    private ArrayList<String> log; //log of activities/notifications
+    private double balance = 0.0; // the bank balance of the AuctionHouse
+    private boolean run = true; //boolean to keep certain threads looping
+    private UUID auctionId; //The id given to the AuctionHouse by the bank
+    private String ip;  //ip address of Auction server
+    private int port; //port number of the Auction server
 
+    /**
+     * The constructor first connects to the bank and starts its own server.
+     * The AuctionHouse object then immediately registers with the bank
+     * then creates a thread to handle socket join requests to the server.
+     * @param address the ip address of the bank
+     * @param clientPort the port number of the bank
+     * @param serverPort port number for Auction to create server
+     */
     public AuctionHouse(String address, int clientPort, int serverPort){
         setupItemList();
         log = new ArrayList<>();
         try{
-                log.add("Connecting to bank");
-                auctionClient = new Socket(address, clientPort);
-                server = new ServerSocket(serverPort);
-                Thread serverThread = new Thread(new AuctionServer());
-                serverThread.start();
-                out = new ObjectOutputStream(auctionClient.getOutputStream());
-                setupItemList();
-                try(final DatagramSocket socket = new DatagramSocket()){
-                    socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
-                    ip = socket.getLocalAddress().getHostAddress();
-                }
-                port = server.getLocalPort();
-                NetInfo serverInfo = new NetInfo(ip,port);
-                List<NetInfo> ahInfo = new LinkedList<>();
-                ahInfo.add(serverInfo);
-                Message register = new Message.Builder().command(Command.REGISTER_AH)
-                        .netInfo(ahInfo).send(null);
-                sendToBank(register);
-
-                Thread inThread = new Thread(new AuctionIn());
-                inThread.start();
+            log.add("Connecting to bank");
+            auctionClient = new Socket(address, clientPort);
+            server = new ServerSocket(serverPort);
+            Thread serverThread = new Thread(new AuctionServer());
+            serverThread.start();
+            out = new ObjectOutputStream(auctionClient.getOutputStream());
+            setupItemList();
+            try(final DatagramSocket socket = new DatagramSocket()){
+                socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
+                ip = socket.getLocalAddress().getHostAddress();
+            }
+            port = server.getLocalPort();
+            NetInfo serverInfo = new NetInfo(ip,port);
+            List<NetInfo> ahInfo = new LinkedList<>();
+            ahInfo.add(serverInfo);
+            Message register = new Message.Builder().command(Command.REGISTER_AH)
+                    .netInfo(ahInfo).send(null);
+            sendToBank(register);
+            Thread inThread = new Thread(new AuctionIn());
+            inThread.start();
             } catch(IOException u){
-            u.printStackTrace();
+            check.add(false);
+            System.out.println("Start up/ connection failed");
         }
     }
 
@@ -300,8 +313,11 @@ public class AuctionHouse{
         }
     }
 
+    /**
+     * This class is dedicated to updating the seconds left for items on
+     * sale (i.e. updating timeLeft in the Items in catalogue).
+     */
     private class Countdown implements Runnable{
-
         @Override
         public void run() {
             while(run){
@@ -327,6 +343,12 @@ public class AuctionHouse{
         }
     }
 
+    /**
+     * After the time expires on an Item for sale. This method checks if
+     * there was any bidders and sends the WINNER message to that bidder.
+     * Also releases the hold on the bidders amount.
+     * @param item the item being checked
+     */
     private void itemResult(Item item){
         UUID bidder = item.getBidder();
         UUID itemID = item.getItemID();
@@ -342,6 +364,10 @@ public class AuctionHouse{
         catalogue.remove(item);
     }
 
+    /**
+     * Sends the given message to the bank and adds it to the log for display.
+     * @param message message being sent to the bank.
+     */
     private synchronized void sendToBank(Message message) {
         try {
             log.add("To Bank: "+ message);
@@ -353,7 +379,7 @@ public class AuctionHouse{
     }
 
     /**
-     * Input for the auction from bank
+     * This class is dedicated to handling messages sent from an specific agent.
      */
     private class AuctionIn implements Runnable {
         @Override
@@ -434,6 +460,7 @@ public class AuctionHouse{
         private void registered(Message message){
             auctionId = message.getAccountId();
             addItems(4);
+            check.add(true);
             Thread timer = new Thread(new Countdown());
             timer.setDaemon(true);
             timer.setPriority(4);
@@ -470,8 +497,31 @@ public class AuctionHouse{
     }
 
     /**
+     * This method is used for AuctionGui/Auction communication. The UiUpdater
+     * Thread  in AuctionGui checks if the Auction object was able to connect
+     * and register to the bank.
+     * @return returns true if Auction connected and registered with the bank.
+     * Returns false otherwise
+     */
+    public boolean checkRegistration(){
+        try{
+            System.out.println("waiting");
+            Boolean temp = check.poll(1, TimeUnit.SECONDS);
+            System.out.println("ttemp found");
+            if(temp == null){
+                return false;
+            }
+            return temp;
+        }catch(InterruptedException e){
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
      * This method closes all sockets and streams. It then signals all threads
      * to stop after finishing their current task
+     * (by making them throw exceptions)
      */
     public void shutdown(){
         try{

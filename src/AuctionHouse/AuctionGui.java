@@ -20,7 +20,7 @@ import java.util.ArrayList;
 
 public class AuctionGui extends Application {
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("10.1.10.57");
+    private TextField ipInputField = new TextField("10.82.13.237");
     private TextField portInput = new TextField("4444");
     private TextField serverInput = new TextField("4500");
     private ArrayList<Item> catalogue = new ArrayList<>();
@@ -38,6 +38,7 @@ public class AuctionGui extends Application {
         topWindowSetup();
         setupLog();
         setupLeftWindow();
+        setupCatalogue();
         Scene scene = new Scene(bPane,500,450);
         stage.setOnCloseRequest(e -> {
             Platform.exit();
@@ -102,10 +103,8 @@ public class AuctionGui extends Application {
         String bankIp = ipInputField.getText();
         int bankPort = Integer.parseInt(portInput.getText());
         int serverPort = Integer.parseInt(serverInput.getText());
+        System.out.println("Connecting");
         auction = new AuctionHouse(bankIp,bankPort,serverPort);
-        catalogue = auction.getCatalogue();
-        log = auction.getLog();
-        setupCatalogue();
         Thread thread = new Thread(uiUpdater);
         thread.setDaemon(true);
         thread.start();
@@ -113,13 +112,6 @@ public class AuctionGui extends Application {
 
     private void setupCatalogue(){
         ScrollPane display = new ScrollPane();
-        for (Item item : catalogue) {
-            HBox guiItem = new HBox();
-            String info = item.name() + "   " + item.getCurrentBid();
-            Text name = new Text(info);
-            guiItem.getChildren().add(name);
-            listDisplay.getChildren().add(guiItem);
-        }
         listDisplay.setSpacing(5);
         listDisplay.setAlignment(Pos.CENTER);
         display.setContent(listDisplay);
@@ -131,15 +123,23 @@ public class AuctionGui extends Application {
 
     private Runnable uiUpdater = () ->{
         Runnable updater = this::update;
-        while(!done){
-            try{
-                Thread.sleep(500);
-            }catch (InterruptedException e){
-                e.printStackTrace();
+        if(auction.checkRegistration()){
+            catalogue = auction.getCatalogue();
+            log = auction.getLog();
+            id.setText("ID: "+ auction.getShortId(auction.getAuctionId()));
+            while(!done){
+                Platform.runLater(updater);
+                try{
+                    Thread.sleep(500);
+                }catch (InterruptedException e){
+                    e.printStackTrace();
+                }
             }
-            Platform.runLater(updater);
+            Platform.runLater(this::finish);
+        }else{
+            Text fail = new Text("connection failed");
+            vLog.getChildren().add(fail);
         }
-        Platform.runLater(this::finish);
     };
 
     private void shutdown(){
@@ -151,7 +151,6 @@ public class AuctionGui extends Application {
     private int displayIndex = 0;
     private void update(){
         listDisplay.getChildren().clear();
-        boolean noBidding = false;
         int size = log.size();
         if(displayIndex < size){
             for(int i = displayIndex;i < size; i++){
@@ -160,6 +159,12 @@ public class AuctionGui extends Application {
             }
             displayIndex = size;
         }
+        boolean noBidding = updateCatalogue();
+        balance.setText("Balance: "+auction.getBalance());
+        disconnect.setDisable(noBidding);
+    }
+    private Boolean updateCatalogue(){
+        boolean noBidding = false;
         for (Item item : catalogue) {
             HBox guiItem = new HBox();
             if(item.getBidder() != null){
@@ -176,10 +181,10 @@ public class AuctionGui extends Application {
             guiItem.getChildren().add(name);
             listDisplay.getChildren().add(guiItem);
         }
-        balance.setText("Balance: "+auction.getBalance());
-        id.setText("ID: "+ auction.getShortId(auction.getAuctionId()));
-        disconnect.setDisable(noBidding);
+        return noBidding;
     }
+
+
     private void finish(){
         listDisplay.getChildren().clear();
         log.clear();
