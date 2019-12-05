@@ -50,6 +50,7 @@ public class Agent {
     private ArrayList<Item> currentlyBidding = new ArrayList<Item>();
     private ArrayList<Item> wonItems = new ArrayList<Item>();
 
+    Thread bankInThread;
 
     public Agent(String hostName, int portNumber) {
         bankHostName = hostName;
@@ -83,6 +84,9 @@ public class Agent {
         return accountNumber.toString();
     }
 
+    public Thread getBankInThread() {
+        return bankInThread;
+    }
 
     public void registerBank() throws IOException {
         // create a message and send it to the bank using the message class...
@@ -105,7 +109,7 @@ public class Agent {
         run = true;
         //need to give some attention to this
 
-        Thread bankInThread = new Thread(new setBankIn());
+        bankInThread = new Thread(new setBankIn());
         bankInThread.start();
     }
 

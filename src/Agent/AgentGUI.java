@@ -37,6 +37,8 @@ public class AgentGUI extends Application {
     private Button disconnect = new Button("Shutdown");
     private Stage stage;
     private boolean waitingToConnect = true;
+    private Label balanceLabel;
+    ListView<String> auctionHouses;
 
 
 
@@ -124,9 +126,8 @@ public class AgentGUI extends Application {
     private void setBankMenuWindow() throws IOException {
         VBox options = new VBox();
         options.setAlignment(Pos.CENTER_RIGHT);
-        Label label = new Label(getBalanceString());
-        options.getChildren().add(label);
-
+        balanceLabel = new Label(getBalanceString());
+        options.getChildren().add(balanceLabel);
 
 
         Button deposit = new Button("Deposit");
@@ -135,6 +136,7 @@ public class AgentGUI extends Application {
         };
         deposit.setOnAction(event);
         options.getChildren().add(deposit);
+
         Button info = new Button("About Agent");
         EventHandler<ActionEvent> about = e -> {
             aboutPopUp();
@@ -142,10 +144,21 @@ public class AgentGUI extends Application {
         info.setOnAction(about);
         options.getChildren().add(info);
 
+        EventHandler<ActionEvent> close = e -> {
+            try {
+                agent.shutDownWithBank();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            stage.setScene(auctionMenuScene);
+        };
+        disconnect.setOnAction(close);
+        options.getChildren().add(disconnect);
+
         agent.requestAHList();
         VBox auctionList = new VBox();
         auctionList.setAlignment(Pos.CENTER_LEFT);
-        ListView<String> auctionHouses = new ListView<String>();
+        auctionHouses = new ListView<>();
         ObservableList<String> houses = FXCollections.observableArrayList();
         if (agent.getAuctionHouses()!= null) {
             for (NetInfo netInfo : agent.getAuctionHouses()) {
@@ -156,6 +169,10 @@ public class AgentGUI extends Application {
         auctionHouses.getItems().addAll(houses);
         auctionHouses.setPrefHeight(300);
         auctionHouses.setMaxWidth(250);
+
+        Thread bankMenuUpdate = new Thread(new BankInfoUpdater(options));
+        bankMenuUpdate.start();
+
         Button select = new Button ("Connect to Selected");
         Button refresh = new Button("Refresh");
         EventHandler<ActionEvent> connectToAH = e -> {
@@ -193,6 +210,38 @@ public class AgentGUI extends Application {
 
     }
 
+    public class BankInfoUpdater implements Runnable {
+        private VBox options;
+
+        public BankInfoUpdater (VBox options) {
+            this.options = options;
+        }
+        @Override
+        public void run() {
+            while (agent.connectedToBank) {
+                balanceLabel.setText(null);
+                balanceLabel.setText(getBalanceString());
+                options.getChildren().add(balanceLabel);
+
+                try {
+                    agent.requestAHList();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                VBox auctionList = new VBox();
+                auctionList.setAlignment(Pos.CENTER_LEFT);
+                ObservableList<String> houses = FXCollections.observableArrayList();
+                if (agent.getAuctionHouses()!= null) {
+                    for (NetInfo netInfo : agent.getAuctionHouses()) {
+                        System.out.println(netInfo.toString());
+                        houses.add(netInfo.toString());
+                    }
+                }
+
+            }
+        }
+    }
+
 
 
 
@@ -205,7 +254,7 @@ public class AgentGUI extends Application {
         itemList.setAlignment(Pos.CENTER);
         ListView<String> itemsList = new ListView<String>();
         ObservableList<String> itemStrings = FXCollections.observableArrayList();
-        for (Item item : agent.getStoredCat()) {
+        for (Item item : agent.getCatalogue()) {
             itemStrings.add(item.toString());
         }
         itemsList.getItems().addAll(itemStrings);
@@ -214,7 +263,7 @@ public class AgentGUI extends Application {
         Button bidButton = new Button("Bid");
         EventHandler<ActionEvent> bid = e -> {
             int itemChoice = itemsList.getFocusModel().getFocusedIndex();
-            bidPopUp(agent.getStoredCat().get(itemChoice), itemChoice);
+            bidPopUp(agent.getCatalogue().get(itemChoice), itemChoice);
         };
         bidButton.setOnAction(bid);
         itemList.getChildren().add(itemsList);
