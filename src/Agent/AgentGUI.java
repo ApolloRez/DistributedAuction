@@ -3,10 +3,6 @@ package Agent;
 import AuctionHouse.Item;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
-import javafx.beans.property.StringProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -153,10 +149,11 @@ public class AgentGUI extends Application {
         ObservableList<String> houses = FXCollections.observableArrayList();
         if (agent.getAuctionHouses()!= null) {
             for (NetInfo netInfo : agent.getAuctionHouses()) {
+                System.out.println(netInfo.toString());
                 houses.add(netInfo.toString());
             }
         }
-        auctionHouses.setItems(houses);
+        auctionHouses.getItems().addAll(houses);
         auctionHouses.setPrefHeight(300);
         auctionHouses.setMaxWidth(250);
         Button select = new Button ("Connect to Selected");
@@ -166,11 +163,6 @@ public class AgentGUI extends Application {
             try {
                 agent.connectToAuctionHouse(choice);
             } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-            try {
-                wait(250);
-            } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
             if (agent.getConnectedToAH()) {
@@ -205,6 +197,7 @@ public class AgentGUI extends Application {
 
 
     private void setAuctionHouseMenu() {
+        System.out.println("has AHMENU been called" );
         // just a list of items just like the auction houses list
         // a bid button and pop up for bidding
         //make sure there is a strong way to update it...
@@ -212,16 +205,16 @@ public class AgentGUI extends Application {
         itemList.setAlignment(Pos.CENTER);
         ListView<String> itemsList = new ListView<String>();
         ObservableList<String> itemStrings = FXCollections.observableArrayList();
-        for (Item item : agent.getCatalogue()) {
+        for (Item item : agent.getStoredCat()) {
             itemStrings.add(item.toString());
         }
-        itemsList.setItems(itemStrings);
+        itemsList.getItems().addAll(itemStrings);
         itemList.setPrefHeight(300);
         itemList.setMaxWidth(250);
         Button bidButton = new Button("Bid");
         EventHandler<ActionEvent> bid = e -> {
             int itemChoice = itemsList.getFocusModel().getFocusedIndex();
-            bidPopUp(agent.getCatalogue().get(itemChoice), itemChoice);
+            bidPopUp(agent.getStoredCat().get(itemChoice), itemChoice);
         };
         bidButton.setOnAction(bid);
         itemList.getChildren().add(itemsList);

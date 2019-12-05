@@ -17,6 +17,10 @@ import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+/**
+ * @author Steven Chase
+ * This class holds the logic/communication of the Auction House.
+ */
 public class AuctionHouse{
     private ServerSocket server;
     private Socket auctionClient;
@@ -24,32 +28,30 @@ public class AuctionHouse{
     private ObjectOutputStream out;
     private ItemList list;
     private ArrayList<Item> catalogue = new ArrayList<>();
-    private Set<AgentProxy> activeAgents = new HashSet<>();
+    private List<AgentProxy> activeAgents = new LinkedList<>();
     private ArrayList<String> log;
-    private double balance = 0;
+    private double balance = 0.0;
     private boolean run = true;
     private UUID auctionId;
+    private String ip;
+    private int port;
 
     public AuctionHouse(String address, int clientPort, int serverPort){
         setupItemList();
         log = new ArrayList<>();
-            try{
+        try{
                 log.add("Connecting to bank");
-                System.out.println();
                 auctionClient = new Socket(address, clientPort);
-                log.add("Connection established");
                 server = new ServerSocket(serverPort);
-                System.out.println("Action house server started");
                 Thread serverThread = new Thread(new AuctionServer());
                 serverThread.start();
                 out = new ObjectOutputStream(auctionClient.getOutputStream());
                 setupItemList();
-                String ip;
                 try(final DatagramSocket socket = new DatagramSocket()){
                     socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
                     ip = socket.getLocalAddress().getHostAddress();
                 }
-                int port = server.getLocalPort();
+                port = server.getLocalPort();
                 NetInfo serverInfo = new NetInfo(ip,port);
                 List<NetInfo> ahInfo = new LinkedList<>();
                 ahInfo.add(serverInfo);
@@ -60,37 +62,7 @@ public class AuctionHouse{
                 Thread inThread = new Thread(new AuctionIn());
                 inThread.start();
             } catch(IOException u){
-                u.printStackTrace();
-            }
-    }
-
-    public void shutdown(){
-        try{
-            run = false;
-            String ip;
-            try(final DatagramSocket socket = new DatagramSocket()){
-                socket.connect(InetAddress.getByName("8.8.8.8"), 10002);
-                ip = socket.getLocalAddress().getHostAddress();
-            }
-            int port = server.getLocalPort();
-            NetInfo serverInfo = new NetInfo(ip,port);
-            List<NetInfo> ahInfo = new LinkedList<>();
-            ahInfo.add(serverInfo);
-            Message deregister = new Message.Builder()
-                    .command(Command.DEREGISTER_AH)
-                    .netInfo(ahInfo).send(auctionId);
-            sendToBank(deregister);
-            assert out != null;
-            out.flush();
-            input.close();
-            out.close();
-            server.close();
-            for(AgentProxy agent:activeAgents){
-                agent.shutdown();
-            }
-            activeAgents.clear();
-        }catch(IOException e){
-            e.printStackTrace();
+            u.printStackTrace();
         }
     }
 
@@ -117,23 +89,22 @@ public class AuctionHouse{
     }
 
     /**
-     * starts the auction server for agents to connect
+     * This inner class is dedicated to creating AuctionProxys for each
+     * socket join request.
      */
     private class AuctionServer implements Runnable{
         @Override
         public void run() {
-            System.out.println("serverThread started");
             try{
                 while(run){
                     Socket clientSocket = server.accept();
-                    log.add("client connected");
                     AgentProxy newAgent = new AgentProxy(clientSocket);
                     activeAgents.add(newAgent);
                     Thread client = new Thread(newAgent);
                     client.start();
                 }
             }catch (IOException e){
-                e.printStackTrace();
+                System.out.println("Server is closed");
             }
         }
     }
@@ -161,10 +132,37 @@ public class AuctionHouse{
                 }catch(ClassNotFoundException e){
                     e.printStackTrace();
                 }catch (IOException e){
-                    shutdown();
+                    agentShutdown(false);
                     message = null;
                 }
             }while(message != null);
+        }
+        private void agentShutdown(Boolean reason){
+            try{
+                if(reason){
+                    AuctionMessage shutdown = AuctionMessage.Builder.newB()
+                            .type(AuctionMessage.AMType.DEREGISTER)
+                            .build();
+                    sendOut(shutdown);
+                    log.add("Connection to Auction " +auctionId+"closed");
+                    agentOut.close();
+                    agentIn.close();
+                    agentSocket.close();
+                    activeAgents.remove(this);
+                }else{
+                    System.out.println(activeAgents.size());
+                    System.out.println("socket/stream error");
+                    if(!agentSocket.isClosed()){
+                        agentOut.close();
+                        agentIn.close();
+                        agentSocket.close();
+                    }
+                    activeAgents.remove(this);
+                }
+                message = null;
+            }catch (IOException e){
+                System.out.println("error in shutdown method");
+            }
         }
         private void process(AuctionMessage message){
             AMType type = message.getType();
@@ -179,7 +177,7 @@ public class AuctionHouse{
                     update();
                     break;
                 case DEREGISTER:
-                    shutdown();
+                    agentShutdown(true);
                     break;
                 default: System.out.println(type);
             }
@@ -223,9 +221,6 @@ public class AuctionHouse{
             UUID bidderId = message.getId();
             double amount = message.getAmount();
             Item bidItem = itemSearch(itemID);
-            System.out.println(itemID);
-            System.out.println(amount);
-            System.out.println(bidItem);
             if(bidItem == null){
                 reject(itemID);
                 return;
@@ -289,18 +284,7 @@ public class AuctionHouse{
                 agentOut.reset();
                 agentOut.writeObject(message);
             }catch(IOException e){
-                System.out.println("send out error");
-            }
-        }
-        private void shutdown(){
-            try{
-                String s = "Connection to: "+getShortId(agentID)+" lost";
-                log.add(s);
-                agentOut.close();
-                agentIn.close();
-                agentSocket.close();
-            }catch(IOException e){
-                e.printStackTrace();
+                agentShutdown(false);
             }
         }
 
@@ -320,7 +304,6 @@ public class AuctionHouse{
 
         @Override
         public void run() {
-            System.out.println("started timer");
             while(run){
                 try{
                     int needed =  4 - catalogue.size();
@@ -350,10 +333,12 @@ public class AuctionHouse{
         AgentProxy agent = agentSearch(bidder);
         if (agent != null) {
             agent.winner(item.getCurrentBid(), itemID);
+            Message release = new Message.Builder()
+                    .command(Command.RELEASE_HOLD)
+                    .amount(item.getCurrentBid())
+                    .accountId(bidder).send(auctionId);
+            sendToBank(release);
         }
-        Message release = new Message.Builder().command(Command.RELEASE_HOLD)
-                .amount(item.getCurrentBid()).accountId(bidder).send(auctionId);
-        sendToBank(release);
         catalogue.remove(item);
     }
 
@@ -371,10 +356,8 @@ public class AuctionHouse{
      * Input for the auction from bank
      */
     private class AuctionIn implements Runnable {
-
         @Override
         public void run() {
-            System.out.println("clientIn thread started");
             try {
                 input = new ObjectInputStream(auctionClient.getInputStream());
                 while(run){
@@ -408,22 +391,10 @@ public class AuctionHouse{
                 case GET_AVAILABLE:
                     bankBalance(message);
                     break;
-//                case TRANSFER:
-//                    transfer(message);
-//                    break;
                 default:
                     System.out.println("uh oh");
             }
         }
-
-//        private void transfer(Message message){
-//            UUID bidder = message.getAccountId();
-//            double amount = message.getAmount();
-//            balance += amount;
-//            Message release = new Message.Builder().command(Command.RELEASE_HOLD)
-//                    .amount(amount).accountId(bidder).send(auctionId);
-//            sendToBank(release);
-//        }
 
         private void bankBalance(Message message) {
             balance = message.getAmount();
@@ -467,7 +438,6 @@ public class AuctionHouse{
             timer.setDaemon(true);
             timer.setPriority(4);
             timer.start();
-            System.out.println("bank registration successful:"+auctionId);
         }
     }
 
@@ -485,14 +455,43 @@ public class AuctionHouse{
         return null;
     }
 
+    /**
+     * searches the catalogue for an item based on UUID
+     * @param id the UUID of the item being searched
+     * @return returns the item searched, or null if item isn't found
+     */
     private Item itemSearch(UUID id){
         for(Item item: catalogue){
-            System.out.println(item.name());
             if(item.getItemID().equals(id)){
                 return item;
             }
         }
         return null;
+    }
+
+    /**
+     * This method closes all sockets and streams. It then signals all threads
+     * to stop after finishing their current task
+     */
+    public void shutdown(){
+        try{
+            run = false;
+            NetInfo serverInfo = new NetInfo(ip,port);
+            List<NetInfo> ahInfo = new LinkedList<>();
+            ahInfo.add(serverInfo);
+            Message deregister = new Message.Builder()
+                    .command(Command.DEREGISTER_AH)
+                    .netInfo(ahInfo).send(auctionId);
+            sendToBank(deregister);
+            out.close();
+            input.close();
+            server.close();
+            while(!activeAgents.isEmpty()){
+                activeAgents.get(0).agentShutdown(true);
+            }
+        }catch(IOException e){
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -502,12 +501,25 @@ public class AuctionHouse{
         return catalogue;
     }
 
+    /**
+     * @return returns the log ArrayList
+     */
     public ArrayList<String> getLog(){
         return log;
     }
+
+    /**
+     * @return returns the balance parameter
+     */
     public double getBalance(){
         return balance;
     }
+
+    /**
+     * Grabs the first 4 digits of a given UUID and returns a string
+     * @param aId The UUID being turned into a 4 digit string
+     * @return returns a 4 digit string of the given UUID
+     */
     public String getShortId(UUID aId){
         String id = aId.toString();
         String shortened = "";
@@ -515,5 +527,16 @@ public class AuctionHouse{
             shortened = shortened.concat(String.valueOf(id.charAt(i)));
         }
         return shortened;
+    }
+
+    /**
+     * @return returns the auctionId parameter
+     */
+    UUID getAuctionId(){
+        return auctionId;
+    }
+
+    public String getIdDisplay(){
+        return getShortId(auctionId);
     }
 }

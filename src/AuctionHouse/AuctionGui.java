@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 
 public class AuctionGui extends Application {
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("10.84.119.178");
+    private TextField ipInputField = new TextField("10.1.10.57");
     private TextField portInput = new TextField("4444");
     private TextField serverInput = new TextField("4500");
     private ArrayList<Item> catalogue = new ArrayList<>();
@@ -28,13 +29,15 @@ public class AuctionGui extends Application {
     private Button disconnect = new Button("Shutdown");
     private Button connect = new Button("connect");
     private VBox vLog = new VBox();
+    private Text id = new Text("ID:");
+    private Text balance = new Text("balance: ");
     private ArrayList<String> log = new ArrayList<>();
     private boolean done = false;
     @Override
     public void start(Stage stage) {
-
         topWindowSetup();
         setupLog();
+        setupLeftWindow();
         Scene scene = new Scene(bPane,500,450);
         stage.setOnCloseRequest(e -> {
             Platform.exit();
@@ -43,17 +46,17 @@ public class AuctionGui extends Application {
         EventHandler<ActionEvent> event = e -> shutdown();
         disconnect.setOnAction(event);
         disconnect.setDisable(true);
-        bPane.setRight(disconnect);
         stage.setTitle("Auction House");
         stage.setScene(scene);
         stage.show();
     }
 
-    public void topWindowSetup(){
+    private void topWindowSetup(){
         HBox topWindow = new HBox();
         topWindow.setAlignment(Pos.CENTER);
         VBox bankIP = new VBox();
         Text ipText = new Text("Bank IP");
+        bankIP.setPrefWidth(80);
         bankIP.getChildren().addAll(ipText,ipInputField);
         topWindow.getChildren().add(bankIP);
 
@@ -72,10 +75,20 @@ public class AuctionGui extends Application {
         EventHandler<ActionEvent> event = e -> createAuctionHouse();
         connect.setOnAction(event);
         topWindow.getChildren().add(connect);
+        topWindow.getChildren().add(disconnect);
+        topWindow.setSpacing(10);
         bPane.setTop(topWindow);
     }
 
-    public void setupLog(){
+    private void setupLeftWindow(){
+        VBox left = new VBox();
+        left.setSpacing(10);
+        left.getChildren().add(id);
+        left.getChildren().add(balance);
+        bPane.setLeft(left);
+    }
+
+    private void setupLog(){
         ScrollPane logDisplay = new ScrollPane();
         logDisplay.setPrefViewportHeight(150);
         logDisplay.setFitToWidth(true);
@@ -83,7 +96,7 @@ public class AuctionGui extends Application {
         bPane.setBottom(logDisplay);
     }
 
-    public void createAuctionHouse(){
+    private void createAuctionHouse(){
         connect.setDisable(true);
         done = false;
         String bankIp = ipInputField.getText();
@@ -108,8 +121,12 @@ public class AuctionGui extends Application {
             listDisplay.getChildren().add(guiItem);
         }
         listDisplay.setSpacing(5);
+        listDisplay.setAlignment(Pos.CENTER);
         display.setContent(listDisplay);
+        Insets inset = new Insets(10);
         bPane.setCenter(display);
+        BorderPane.setMargin(display,inset);
+        BorderPane.setAlignment(display,Pos.CENTER);
     }
 
     private Runnable uiUpdater = () ->{
@@ -122,6 +139,7 @@ public class AuctionGui extends Application {
             }
             Platform.runLater(updater);
         }
+        Platform.runLater(this::finish);
     };
 
     private void shutdown(){
@@ -158,13 +176,17 @@ public class AuctionGui extends Application {
             guiItem.getChildren().add(name);
             listDisplay.getChildren().add(guiItem);
         }
+        balance.setText("Balance: "+auction.getBalance());
+        id.setText("ID: "+ auction.getShortId(auction.getAuctionId()));
         disconnect.setDisable(noBidding);
-        if(done){
-            listDisplay.getChildren().clear();
-            log.clear();
-            vLog.getChildren().clear();
-        }
     }
+    private void finish(){
+        listDisplay.getChildren().clear();
+        log.clear();
+        vLog.getChildren().clear();
+        displayIndex = 0;
+    }
+
     private String getStatus(Item item){
         if(item.getBidder() != null){
             return item.getBidderIdFour();
