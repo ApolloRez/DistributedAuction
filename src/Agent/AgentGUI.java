@@ -44,42 +44,26 @@ public class AgentGUI extends Application {
 
 
 
-    private TextField ipInputField = new TextField("10.1.10.57");
-    private TextField portInput = new TextField("4444");
+    private TextField ipInputField = new TextField("ip String");
+    private TextField portInput = new TextField("portNumber int");
 
 
     @Override
     public void start(Stage stage) throws Exception {
         this.stage = stage;
         netInfoWindow();
-        Scene netInfoScene = new Scene(bPane, 400, 400);
-        bankMenuScene = new Scene(bankPane, 400, 400);
-        auctionMenuScene = new Scene(auctionPane, 400,400);
-        stage.setOnCloseRequest(e -> {
-            Platform.exit();
-            System.exit(0);
-        });
-        EventHandler<ActionEvent> event = e -> shutdown();
-        disconnect.setOnAction(event);
-        disconnect.setDisable(true);
-        bPane.setCenter(disconnect);
+        Scene netInfoScene = new Scene(bPane, 400, 200);
+        bankMenuScene = new Scene(bankPane, 500, 400);
+        auctionMenuScene = new Scene(auctionPane, 300,500);
         stage.setTitle("Distributed Agent - Connect to Bank");
         stage.setScene(netInfoScene);
         stage.show();
-        //prepare a scene graph with the required nodes
-        //prepare a scene with the required dimensions and add the scene graph
-        //(root node of the scene graph) to it.
-        // Prepare a stage and add the scene to the stage and display the cont
-        //ents of the stage.
-
     }
 
-    private void shutdown() {
-    }
 
     private void netInfoWindow() {
         HBox netInfoWindow = new HBox();
-        netInfoWindow.setAlignment(Pos.TOP_CENTER);
+        netInfoWindow.setAlignment(Pos.CENTER);
         VBox bankIP = new VBox();
         Text ipText = new Text("Bank IP");
         bankIP.getChildren().addAll(ipText,ipInputField);
@@ -105,8 +89,9 @@ public class AgentGUI extends Application {
             }
         };
         connect.setOnAction(event);
+
         netInfoWindow.getChildren().add(connect);
-        bPane.setTop(netInfoWindow);
+        bPane.setCenter(netInfoWindow);
     }
 
     private void createAgent() throws IOException, InterruptedException {
@@ -131,6 +116,15 @@ public class AgentGUI extends Application {
 
     }
 
+
+    // go through bank windown..
+    /*
+     - needs to be able to close safely
+     - switch the balance label to a balance button
+     - find a way to update the auction houses list consistently
+     - look into the pop up widows so they aren't hovering labels
+     -
+     */
     private void setBankMenuWindow() throws IOException {
         VBox options = new VBox();
         options.setAlignment(Pos.CENTER_RIGHT);

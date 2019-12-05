@@ -18,13 +18,14 @@ import java.util.UUID;
 public class Agent {
 
 
-    private ServerSocket bankServer = null;
-    private ServerSocket auctionServer = null; // do i even need these...
     private Socket bankClient = null;
     private Socket auctionClient = null;
 
     private String bankHostName;
     private int bankPortNumber;
+
+    private String auctionHouse;
+    private int auctionPort;
 
     private ObjectInputStream bankIn;
     private ObjectOutputStream bankOut;
@@ -32,23 +33,22 @@ public class Agent {
     private ObjectOutputStream auctionOut;
 
     public AgentDisplay display;
-    public boolean run;
 
+    public boolean run;
     public boolean connectedToBank;
+    private boolean connectedToAH;
+    private boolean activeBid;
+
     private double balance;
     private UUID accountNumber;
-    //add a list of items the agent has won.
-    private String auctionHouse;
-    private int auctionPort;
+
     private List<NetInfo> auctionHouses;
     private ArrayList<Item> catalogue = new ArrayList<Item>();
 
-    private boolean connectedToAH;
     private Item attemptedBid;
     private Double attemptedBidAmount;
     private ArrayList<Item> currentlyBidding = new ArrayList<Item>();
     private ArrayList<Item> wonItems = new ArrayList<Item>();
-    private boolean activeBid;
 
 
     public Agent(String hostName, int portNumber) {
@@ -79,15 +79,19 @@ public class Agent {
         return auctionHouses;
     }
 
+    public String idToString() {
+        return accountNumber.toString();
+    }
+
 
     public void registerBank() throws IOException {
         // create a message and send it to the bank using the message class...
         try {
-            System.out.println("Connecting to the bank!");
+            //System.out.println("Connecting to the bank!");
             System.out.println(bankHostName);
             System.out.println(bankPortNumber);
             bankClient = new Socket(bankHostName, bankPortNumber);
-            System.out.println("Connected");
+            //System.out.println("Connected");
             bankOut = new ObjectOutputStream(bankClient.getOutputStream());
         } catch (IOException u) {
             u.printStackTrace();
@@ -96,19 +100,14 @@ public class Agent {
                 .command(Message.Command.REGISTER_CLIENT)
                 .send(null);
         sendToBank(message);
+
+
         run = true;
+        //need to give some attention to this
+
         Thread bankInThread = new Thread(new setBankIn());
         bankInThread.start();
-
-        // need a new thread here right?
     }
-
-
-
-    // need too confer with magnus about how to use message to read in the UUID
-
-    //add methods for different bank messages right?
-
 
     public void updateBalance() throws IOException {
         Message message = new Message.Builder()
@@ -117,13 +116,6 @@ public class Agent {
         sendToBank(message);
     }
 
-    private void sendToBank(Message message) throws IOException {
-        try {
-            bankOut.writeObject(message);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void bankDeposit(double deposit) throws IOException {
         System.out.println("Sending Deposit");
@@ -143,6 +135,31 @@ public class Agent {
         sendToBank(message);
     }
 
+    public void shutDownWithBank() throws IOException {
+        Message message = new Message.Builder()
+                .command(Message.Command.DEREGISTER_CLIENT)
+                .accountId(accountNumber)
+                .send(accountNumber);
+        sendToBank(message);
+    }
+
+    public void closeAgent() throws IOException {
+        Message message = new Message.Builder()
+                .command(Message.Command.DEREGISTER_CLIENT)
+                .send(accountNumber);
+        sendToBank(message);
+    }
+
+    private void sendToBank(Message message) throws IOException {
+        connectedToBank = false;
+        run = false;
+        try {
+            bankOut.writeObject(message);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public ArrayList<Item> getWonItems() {
         return wonItems;
     }
@@ -153,35 +170,20 @@ public class Agent {
 
         @Override
         public void run() {
-            System.out.println("listening to bank");
+            //System.out.println("listening to bank");
             try {
                 bankIn = new ObjectInputStream(bankClient.getInputStream());
                 while(run) {
                     message = (Message) bankIn.readObject(); //?
-                    System.out.println(message.toString());
+                    //System.out.println(message.toString());
                     processBankMessage(message);
                 }
-
             } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
-                        /*
-        private void processBankMessage(Message message) {
-            if (message.getAccountId()!=null && accountNumber==null) {
-                accountNumber = message.getAccountId();
-            }
-            if (message.getResponse() == Message.Response.SUCCESS) {
-                AgentDisplay.printSuccess();
-            }
-            if (message.getNetInfo()!=null) {
-                auctionHouses = message.getNetInfo();
-            }
-            if (message.getAmount() != null) {
-                balance = message.getAmount();
-            }
-        }
-*/
+
+// process bank message should be able to get the right info from bank
 
             private void processBankMessage(Message message) throws IOException {
                 if (message.getNetInfo() != null) {
@@ -191,27 +193,24 @@ public class Agent {
                 if (message.getCommand()== Message.Command.REGISTER_CLIENT) {
                     accountNumber = message.getAccountId();
                     connectedToBank = true;
-                    System.out.println("got it");
+                    //System.out.println("got it");
                 }
                 if (message.getAmount()!= null) {
-                    System.out.println("Balance Updated by Bank");
+                    //System.out.println("Balance Updated by Bank");
                     balance = message.getAmount();
                 }
 
                 if (message.getResponse() != null) {
-
-
                     switch (message.getResponse()) {
                         case SUCCESS: {
-
                             if (accountNumber == null) {
                                 accountNumber = message.getAccountId();
                             }
-
                             switch (message.getCommand()) {
                                 case DEPOSIT: {
-                                    System.out.println("should call print deposit");
-                                    display.printDepositBalance();
+                                    //System.out.println("should call print deposit");
+                                    //display.printDepositBalance();
+
                                     break;
                                 }
                                 case HOLD: {
@@ -263,6 +262,7 @@ public class Agent {
                 registerAuctionHouse();
                 Thread auctionInThread = new Thread(new setAuctionIn());
                 auctionInThread.start();
+                connectedToAH = true;
                 return true;
             } catch (UnknownHostException e) {
                 e.printStackTrace();
@@ -276,24 +276,27 @@ public class Agent {
         public boolean getConnectedToAH() {
             return connectedToAH;
         }
+
         public void registerAuctionHouse() throws IOException {
             AuctionMessage message = AuctionMessage.Builder.newB()
                     .type(AuctionMessage.AMType.REGISTER).id(accountNumber).build();
             auctionOut.writeObject(message);
         }
         // we need a de register with auction house
-        public void deRegisterAuctionHouse() {
-          //  AuctionMessage message = AuctionMessage.Builder.newB()
-                //    .type(AuctionMessage.AMType.)
+        public void deRegisterAuctionHouse() throws IOException {
+            AuctionMessage message = AuctionMessage.Builder.newB()
+                    .type(AuctionMessage.AMType.DEREGISTER)
+                    .id(accountNumber).build();
+            auctionOut.writeObject(message);
         }
 
         private void getAuctionNetInfo(int choice) {
             auctionHouse = auctionHouses.get(choice).getIp();
             auctionPort = auctionHouses.get(choice).getPort();
-
         }
 
         public void sendBidToAH(int choice, double doubleBid) throws IOException {
+            activeBid = true;
             attemptedBid = catalogue.get(choice);
             attemptedBidAmount = doubleBid;
             Double bid = doubleBid;
@@ -343,28 +346,44 @@ public class Agent {
                     case OUTBID: {
                         // update which items the agent is know bidding on
                         // if we have a bool about active bids we need to update that too
+
                         for (Item item : currentlyBidding) {
                             if (message.getItem()== item.getItemID()) {
                                 currentlyBidding.remove(item);
                             }
                         }
-                        display.auctionHouseMenu();
+                        if (currentlyBidding.isEmpty()) {
+                            activeBid = false;
+                        }
+                        //display.auctionHouseMenu();
                     }
                     case WINNER: {
                         // need to determine how we are handling "winning an item"
                         //not that important.
-                        display.wonAnItem();
-                        display.auctionHouseMenu();
+                        for (Item item : currentlyBidding) {
+                            if (message.getItem()== item.getItemID()) {
+                                currentlyBidding.remove(item);
+                                wonItems.add(item);
+                            }
+                            if (currentlyBidding.isEmpty()) {
+                                activeBid = false;
+                            }
+                        }
+                        //display.wonAnItem();
+                        //display.auctionHouseMenu();
                     }
                     case REJECTION: {
                         //print out insufficient funds or so
-                        display.auctionHouseMenu();
-
+                        //display.auctionHouseMenu();
+                        if (currentlyBidding.isEmpty()) {
+                            activeBid = false;
+                        }
                     }
+
                     case ACCEPTANCE: {
                         //update which items the agent is now biddin on
                         currentlyBidding.add(attemptedBid);
-                        display.auctionHouseMenu();
+                        //display.auctionHouseMenu();
 
 
 
@@ -375,17 +394,10 @@ public class Agent {
             }
         }
 
-        public void closeAgent() throws IOException {
-            Message message = new Message.Builder()
-                    .command(Message.Command.DEREGISTER_CLIENT)
-                    .send(accountNumber);
-            sendToBank(message);
-        }
 
 
 
-        public String idToString() {
-            return accountNumber.toString();
-        }
+
+
     }
 
