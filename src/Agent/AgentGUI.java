@@ -40,6 +40,8 @@ public class AgentGUI extends Application {
     private Label balanceLabel;
     ListView<String> auctionHouses;
 
+    ObservableList<String> houses = FXCollections.observableArrayList();
+
 
 
     private TextField ipInputField = new TextField("ip String");
@@ -159,19 +161,28 @@ public class AgentGUI extends Application {
         VBox auctionList = new VBox();
         auctionList.setAlignment(Pos.CENTER_LEFT);
         auctionHouses = new ListView<>();
-        ObservableList<String> houses = FXCollections.observableArrayList();
         if (agent.getAuctionHouses()!= null) {
             for (NetInfo netInfo : agent.getAuctionHouses()) {
                 System.out.println(netInfo.toString());
                 houses.add(netInfo.toString());
             }
         }
+        houses.add("why");
+        houses.add("wont");
         auctionHouses.getItems().addAll(houses);
         auctionHouses.setPrefHeight(300);
         auctionHouses.setMaxWidth(250);
 
-        Thread bankMenuUpdate = new Thread(new BankInfoUpdater(options));
+        /*
+        this thread may not be the way to go I dont know for sure though
+
+         */
+
+        Thread bankMenuUpdate = new Thread(new BankInfoUpdater(options, auctionList));
         bankMenuUpdate.start();
+
+
+
 
         Button select = new Button ("Connect to Selected");
         Button refresh = new Button("Refresh");
@@ -212,32 +223,26 @@ public class AgentGUI extends Application {
 
     public class BankInfoUpdater implements Runnable {
         private VBox options;
+        private VBox auctionList;
 
-        public BankInfoUpdater (VBox options) {
+        public BankInfoUpdater (VBox options, VBox auctionList) {
             this.options = options;
+            this.auctionList = auctionList;
         }
         @Override
         public void run() {
-            while (agent.connectedToBank) {
-                balanceLabel.setText(null);
+            while(agent.run) {
                 balanceLabel.setText(getBalanceString());
-                options.getChildren().add(balanceLabel);
-
-                try {
-                    agent.requestAHList();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                VBox auctionList = new VBox();
+                options.layout();
                 auctionList.setAlignment(Pos.CENTER_LEFT);
-                ObservableList<String> houses = FXCollections.observableArrayList();
                 if (agent.getAuctionHouses()!= null) {
                     for (NetInfo netInfo : agent.getAuctionHouses()) {
                         System.out.println(netInfo.toString());
-                        houses.add(netInfo.toString());
+                        if (!houses.contains(netInfo)) {
+                            houses.add(netInfo.toString());
+                        }
                     }
                 }
-
             }
         }
     }
@@ -341,6 +346,10 @@ public class AgentGUI extends Application {
         makeADeposit.getContent().add(depositWindow);
         makeADeposit.show(stage);
     }
+
+//    public AuctionMenuUpdate implements Runnable {
+//
+  //  }
 
     public static void main(String args[]) {
         launch(args);

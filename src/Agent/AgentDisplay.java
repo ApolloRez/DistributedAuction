@@ -124,10 +124,10 @@ public class AgentDisplay {
         System.out.println("Items currently up for bid:");
         printBalance();
         printCurrentItems();
-        int goBack = 1 + agent.getStoredCat().size();
+        int goBack = 1 + agent.getCatalogue().size();
         System.out.println("["+goBack+"] Go back]");
         choice = scanner.nextInt();
-        if (choice == agent.getStoredCat().size()+1) {
+        if (choice == agent.getCatalogue() .size()+1) {
             agent.deRegisterAuctionHouse();
             bankMenu();
         } else {
@@ -141,7 +141,7 @@ public class AgentDisplay {
 
 
     private void printCurrentItems() {
-        ArrayList<Item> catalogue = agent.getStoredCat();
+        ArrayList<Item> catalogue = agent.getCatalogue();
         for (int i=0; i < catalogue.size(); i++) {
             System.out.println("["+i+"]"+catalogue.get(i).name());
 

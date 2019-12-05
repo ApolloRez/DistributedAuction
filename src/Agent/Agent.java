@@ -88,6 +88,7 @@ public class Agent {
         return bankInThread;
     }
 
+
     public void registerBank() throws IOException {
         // create a message and send it to the bank using the message class...
         try {
@@ -155,8 +156,6 @@ public class Agent {
     }
 
     private void sendToBank(Message message) throws IOException {
-        connectedToBank = false;
-        run = false;
         try {
             bankOut.writeObject(message);
         } catch (IOException e) {
@@ -197,7 +196,7 @@ public class Agent {
                 if (message.getCommand()== Message.Command.REGISTER_CLIENT) {
                     accountNumber = message.getAccountId();
                     connectedToBank = true;
-                    //System.out.println("got it");
+                    System.out.println("got it");
                 }
                 if (message.getAmount()!= null) {
                     //System.out.println("Balance Updated by Bank");
