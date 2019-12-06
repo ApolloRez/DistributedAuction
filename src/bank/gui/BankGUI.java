@@ -7,10 +7,28 @@ import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
+
 public class BankGUI extends Application {
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
     @Override
-    public void start(Stage primaryStage) throws Exception {
-        new BankServer(4444, new Bank()).start();
+    public void start(Stage primaryStage) {
+        Parameters parameters = this.getParameters();
+        int portNumber;
+        try {
+            portNumber = Integer.parseInt(parameters.getRaw().get(0));
+        } catch (NumberFormatException ignored) {
+            portNumber = 4444;
+        }
+        try {
+            new BankServer(portNumber, new Bank()).start();
+        } catch (IOException ignored) {
+            System.out.println("Invalid Port number");
+        }
         Scene scene = new Scene(new View().getRoot());
         primaryStage.setTitle("Bank");
         primaryStage.setHeight(800);

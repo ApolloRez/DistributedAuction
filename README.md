@@ -1,11 +1,6 @@
 Distributed Auctions
 ====================
 
-To Do
-=====
-
-Done
-====
 
 Authors
 =======

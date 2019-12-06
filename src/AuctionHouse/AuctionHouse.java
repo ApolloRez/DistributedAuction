@@ -16,7 +16,6 @@ import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Steven Chase
@@ -625,7 +624,7 @@ public class AuctionHouse{
      */
     public boolean checkRegistration(){
         try{
-            Boolean temp = check.poll(1, TimeUnit.SECONDS);
+            Boolean temp = check.take();
             if(temp == null){
                 return false;
             }

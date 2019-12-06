@@ -245,8 +245,13 @@ public class Connection implements Runnable {
     private Message readMessage() throws IOException, ClassNotFoundException {
         Message message = (Message) objectInputStream.readObject();
         Message.Command temp = message.getCommand();
-        if(temp!= Message.Command.GET_RESERVED&& temp!= Message.Command.GET_AVAILABLE){
-            connectionLoggerService.add("Client : " + message.toString());
+        if (temp != Message.Command.GET_RESERVED && temp !=
+                Message.Command.GET_AVAILABLE) {
+            if (connectionType == Message.Command.REGISTER_CLIENT) {
+                connectionLoggerService.add("\t\tClient : " + message.toString());
+            } else {
+                connectionLoggerService.add("Auction House" + message.toString());
+            }
         }
         return message;
     }
