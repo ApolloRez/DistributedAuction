@@ -105,13 +105,21 @@ public class AuctionHouse{
      * This class is dedicated to handling messages sent from an specific agent.
      */
     private class AuctionIn implements Runnable {
+        /**
+         * loop to wait for new messages forever(until an exception is thrown).
+         * Incoming messages that aren't looped (GET_AVAILABLE) are added
+         * to the log.
+         */
         @Override
         public void run() {
             try {
                 input = new ObjectInputStream(auctionClient.getInputStream());
                 while(run){
                     Message message = (Message) input.readObject();
-                    log.add("Bank: " + message);
+                    Command temp = message.getCommand();
+                    if(temp != Command.GET_AVAILABLE){
+                        log.add("Bank: " + message);
+                    }
                     processMessage(message);
                 }
             } catch (ClassNotFoundException e) {
@@ -167,7 +175,8 @@ public class AuctionHouse{
         }
 
         /**
-         * updates the balance variable to the bank balance given by the bank
+         * updates the balance variable to the bank balance given by the bank,
+         *
          * @param message the message with the available balance for this object
          */
         private void bankBalance(Message message) {
@@ -559,11 +568,15 @@ public class AuctionHouse{
 
     /**
      * Sends the given message to the bank and adds it to the log for display.
+     * Looped messages (GET_AVAILABLE) are ignored when adding to log.
      * @param message message being sent to the bank.
      */
     private synchronized void sendToBank(Message message) {
         try {
-            log.add("To Bank: "+ message);
+            Command temp = message.getCommand();
+            if(temp != Command.GET_AVAILABLE){
+                log.add("Bank: " + message);
+            }
             out.reset();
             out.writeObject(message);
             if(message.getCommand() == Command.DEREGISTER_AH){
