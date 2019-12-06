@@ -13,7 +13,7 @@ public class BankGUI extends Application {
         new BankServer(4444, new Bank()).start();
         Scene scene = new Scene(new View().getRoot());
         primaryStage.setTitle("Bank");
-        primaryStage.setHeight(400);
+        primaryStage.setHeight(800);
         primaryStage.setWidth(1200);
         primaryStage.setScene(scene);
         primaryStage.setOnCloseRequest(e -> {

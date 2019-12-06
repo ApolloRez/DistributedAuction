@@ -160,8 +160,7 @@ public class Connection implements Runnable {
                     // UUID - senderId
                     case GET_AVAILABLE: {
                         writeMessage(new Message.Builder()
-                                .amount(bank.getAccountFunds(
-                                        message.getSender()))
+                                .amount(bank.getAccountFunds(message.getSender()))
                                 .command(Message.Command.GET_AVAILABLE)
                                 .send(bank.getId()));
                         break;
@@ -229,7 +228,7 @@ public class Connection implements Runnable {
      */
     private void writeMessage(Message message) throws IOException {
         Message.Command temp = message.getCommand();
-        if(temp!= Message.Command.GET_RESERVED&& temp!= Message.Command.GET_AVAILABLE){
+        if (temp != Message.Command.GET_RESERVED && temp != Message.Command.GET_AVAILABLE) {
             connectionLoggerService.add("Bank : " + message.toString());
         }
         objectOutputStream.reset();
