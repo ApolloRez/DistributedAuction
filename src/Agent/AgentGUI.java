@@ -35,6 +35,8 @@ public class AgentGUI extends Application {
 
     private VBox aHLBox = new VBox();
     private VBox itemBox = new VBox();
+    private HBox agentWindow = new HBox();
+
 
     private ArrayList<String> AHNetInfoStrings = new ArrayList<>();
     private ArrayList<String> itemStrings = new ArrayList<>();
@@ -65,7 +67,7 @@ public class AgentGUI extends Application {
         auctionHousesWindow();
         biddingWindowSetup();
         Scene scene = new Scene(bPane, 600,600);
-        agent.connectToAuctionHouse(-1);
+       // agent.connectToAuctionHouse(-1);
         primaryStage.setOnCloseRequest(e -> {
             Platform.exit();
             System.exit(0);
@@ -87,6 +89,7 @@ public class AgentGUI extends Application {
         ScrollPane display = new ScrollPane();
         display.setMinSize(150,100);
         aHLBox.setAlignment(Pos.CENTER);
+        aHLBox.setMaxWidth(100);
         display.setContent(aHLBox);
         bPane.setLeft(display);
 
@@ -115,8 +118,14 @@ public class AgentGUI extends Application {
         aHLChoice.minWidth(100);
         Text choiceLabel = new Text("Auction House Choice");
         aHLInput.setMaxSize(50,50);
+
+        Button refreshAHList = new Button("refresh");
+        EventHandler<ActionEvent> refresh = e-> {
+            updateAHList();
+        };
+        refreshAHList.setOnAction(refresh);
         aHLChoice.getChildren().addAll(choiceLabel,aHLInput,connectAH,
-            disconnectAH);
+                refreshAHList, disconnectAH);
 
         Button deposit = new Button("Deposit");
         EventHandler<ActionEvent> event = e -> {
@@ -134,14 +143,16 @@ public class AgentGUI extends Application {
 
         //bid read in and bid button as well as item choice read in;
         Text bidInfo = new Text("Bid:");
-        Button bidButton = new Button();
+        Button bidButton = new Button("send Bid");
         EventHandler<ActionEvent> bid = e -> {
+            try {
                 double bidInput = Double.parseDouble(bidAmount.toString());
                 int choiceInput = Integer.parseInt(itemChoice.toString());
-            try {
+                System.out.println("sending bid");
                 agent.sendBidToAH(choiceInput, bidInput);
-            } catch (IOException ex) {
-                ex.printStackTrace();
+
+            } catch (NumberFormatException | IOException nMF) {
+
             }
         };
         Text bidAmountLabel = new Text("Bid Amount:");
@@ -196,6 +207,8 @@ public class AgentGUI extends Application {
                 shutDown();
             }
         };
+
+
         disconnect.setOnAction(closeEvent);
         connectToBank.getChildren().add(connect);
         connectToBank.getChildren().add(disconnect);
@@ -206,12 +219,37 @@ public class AgentGUI extends Application {
     }
 
     private void agentWindowSetup() {
-        HBox agentWindow = new HBox();
         agentWindow.setMinHeight(100);
         agentWindow.getChildren().add(balance);
         agentWindow.getChildren().add(available);
         bPane.setTop(agentWindow);
     }
+
+    private void updateItemList() {
+        int i = 0;
+        for (Item item : catalogue) {
+            i++;
+            HBox guiItem = new HBox();
+            String info = i+": "+item.name();
+            info = info.concat("         ");
+            info = info + item.getCurrentBid();
+            info = info.concat("         ");
+            info = info + item.getTimeLeft();
+            info = info.concat("         ");
+            Text name = new Text(info);
+            guiItem.getChildren().add(name);
+            itemBox.getChildren().add(guiItem);
+        }
+        if (agent.getConnectedToAH()) {
+            try {
+                agent.getUpdatedCatalogue();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
 
     private void createAgent() throws IOException {
         agent = new Agent(bankIPString, bankPortNumber);
@@ -225,7 +263,6 @@ public class AgentGUI extends Application {
     }
 
     private Runnable listUpdater = () -> {
-        System.out.println("can you hear me list updater?");
         Runnable updater = this::update;
         if (agent.getConnectedToBank()) {
             if (agent.getConnectedToAH()) {
@@ -256,34 +293,31 @@ public class AgentGUI extends Application {
     }
 
     private void update() {
-        System.out.println("Updating SPam");
         aHLBox.getChildren().clear();
         itemBox.getChildren().clear();
+        agentWindow.getChildren().clear();
         catalogue = agent.getCatalogue();
         auctionHouses = agent.getAuctionHouses();
         bankBalance = agent.getBalance();
         availableBalance = agent.getAvailableBalance();
-        updateAHList();
         updateItemList();
+        updateBalances();
     }
 
-    private void updateItemList() {
-        int i = 0;
-        for (Item item : catalogue) {
-            i++;
-            HBox guiItem = new HBox();
-            String info = i+": "+item.name();
-            info = info.concat("         ");
-            info = info + item.getCurrentBid();
-            info = info.concat("         ");
-            info = info + item.getTimeLeft();
-            info = info.concat("         ");
-            Text name = new Text(info);
-            guiItem.getChildren().add(new Text("Gottem"));
-            guiItem.getChildren().add(name);
-            itemBox.getChildren().add(guiItem);
-        }
+    private void updateBalances() {
+        double newBalance  = agent.getBalance();
+        HBox bItem = new HBox();
+        Text newB = new Text("Balance: "+newBalance);
+        bItem.getChildren().add(newB);
+
+        double newABalance = agent.getAvailableBalance();
+        HBox abItem = new HBox();
+        Text newAB = new Text("Available: " + newABalance);
+        abItem.getChildren().add(newAB);
+
+        agentWindow.getChildren().addAll(bItem, abItem);
     }
+
 
     private void updateAHList() {
         if (auctionHouses != null) {
@@ -303,4 +337,10 @@ public class AgentGUI extends Application {
         }
     }
 
+
+    public static void main(String[] args) {
+        launch(args);
+    }
 }
+
+

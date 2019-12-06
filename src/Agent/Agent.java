@@ -97,10 +97,14 @@ public class Agent {
             System.out.println(bankHostName);
             System.out.println(bankPortNumber);
             bankClient = new Socket(bankHostName, bankPortNumber);
+            connectedToBank = true;
+
             //System.out.println("Connected");
             bankOut = new ObjectOutputStream(bankClient.getOutputStream());
         } catch (IOException u) {
             u.printStackTrace();
+            connectedToBank = false;
+
         }
         Message message = new Message.Builder()
                 .command(Message.Command.REGISTER_CLIENT)
@@ -208,7 +212,6 @@ public class Agent {
                 }
                 if (message.getCommand()== Message.Command.REGISTER_CLIENT) {
                     accountNumber = message.getAccountId();
-                    connectedToBank = true;
                     System.out.println("got it");
                 }
                 if (message.getAmount()!= null) {
@@ -296,14 +299,18 @@ public class Agent {
         public void registerAuctionHouse() throws IOException {
             AuctionMessage message = AuctionMessage.Builder.newB()
                     .type(AuctionMessage.AMType.REGISTER).id(accountNumber).build();
-            auctionOut.writeObject(message);
+            sendToAH(message);
+            connectedToAH = true;
+
         }
         // we need a de register with auction house
         public void deRegisterAuctionHouse() throws IOException {
             AuctionMessage message = AuctionMessage.Builder.newB()
                     .type(AuctionMessage.AMType.DEREGISTER)
                     .id(accountNumber).build();
-            auctionOut.writeObject(message);
+            sendToAH(message);
+            connectedToAH = false;
+
         }
 
         private void getAuctionNetInfo(int choice) {
@@ -322,26 +329,39 @@ public class Agent {
                     .amount(bid)
                     .id(accountNumber)
                     .build();
-            auctionOut.writeObject(bidMessage);
+            sendToAH(bidMessage);
         }
 
+        public void getUpdatedCatalogue() throws IOException {
+            System.out.println("this isnt printing right??");
+            AuctionMessage updateMessage = new AuctionMessage.Builder().newB()
+                    .type(AuctionMessage.AMType.UPDATE)
+                    .id(accountNumber)
+                    .build();
+            sendToAH(updateMessage);
+        }
+
+    private void sendToAH(AuctionMessage message) throws IOException {
+        try {
+            auctionOut.writeObject(message);
+            System.out.println(message.toString());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
         public class setAuctionIn implements Runnable {
             public AuctionMessage message;
-            public boolean catalogueUpdated;
 
 
             @Override
             public void run() {
-                catalogueUpdated = false;
                 System.out.println("listening to AH");
                 try {
                     auctionIn = new ObjectInputStream(auctionClient.getInputStream());
                     message = (AuctionMessage) auctionIn.readObject(); //?
                     processAuctionMessage(message);
-                    if (catalogueUpdated) {
-                        display.auctionHouseMenu();
-                    }
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -351,13 +371,12 @@ public class Agent {
                 if (message.getType() == AuctionMessage.AMType.ACCEPTANCE) {
                     activeBid = true;
                 }
-                if (message.getCatalogue() != null) {
-                    catalogue = message.getCatalogue();
-                    catalogueUpdated = true;
-                }
+                System.out.println("theres been an update to catatlogue");
+                catalogue = message.getCatalogue();
                 switch (message.getType()) {
                     case REGISTER: {
-                        connectedToAH = true;
+
+                        break;
                     }
                     case OUTBID: {
                         // update which items the agent is know bidding on
@@ -371,6 +390,7 @@ public class Agent {
                         if (currentlyBidding.isEmpty()) {
                             activeBid = false;
                         }
+                        break;
                         //display.auctionHouseMenu();
                     }
                     case WINNER: {
@@ -385,6 +405,7 @@ public class Agent {
                                 activeBid = false;
                             }
                         }
+                        break;
                         //display.wonAnItem();
                         //display.auctionHouseMenu();
                     }
@@ -394,6 +415,7 @@ public class Agent {
                         if (currentlyBidding.isEmpty()) {
                             activeBid = false;
                         }
+                        break;
                     }
 
                     case ACCEPTANCE: {
@@ -401,7 +423,7 @@ public class Agent {
                         currentlyBidding.add(attemptedBid);
                         //display.auctionHouseMenu();
 
-
+                        break;
 
                     }
                 }
