@@ -37,9 +37,7 @@ public class Account {
      * @param amount double
      */
     public void deposit(double amount) {
-        System.out.println("depositing : " + amount);
         availableBalance += amount;
-        System.out.println("Total Balance: " + availableBalance);
     }
 
     /**
