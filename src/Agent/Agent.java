@@ -26,6 +26,8 @@ public class Agent {
 
     private String auctionHouse;
     private int auctionPort;
+    private UUID auctionID;
+    private double fundsToTransfer;
 
     private ObjectInputStream bankIn;
     private ObjectOutputStream bankOut;
@@ -41,6 +43,7 @@ public class Agent {
 
     private double balance;
     private double availableBalance;
+    private double reservedBalance;
     private UUID accountNumber;
 
     private List<NetInfo> auctionHouses;
@@ -74,7 +77,7 @@ public class Agent {
     }
 
     public double getBalance() {
-        return balance;
+        return availableBalance + reservedBalance;
     }
 
     public List<NetInfo> getAuctionHouses() {
@@ -119,11 +122,15 @@ public class Agent {
         bankInThread.start();
     }
 
-    public void updateBalance() throws IOException {
+    public void updateBalance() {
         Message message = new Message.Builder()
                 .command(Message.Command.GET_AVAILABLE)
                 .send(accountNumber);
         sendToBank(message);
+        Message message1 = new Message.Builder()
+                .command(Message.Command.GET_RESERVED)
+                .send(accountNumber);
+        sendToBank(message1);
     }
 
 
@@ -145,7 +152,7 @@ public class Agent {
         sendToBank(message);
     }
 
-    public void shutDownWithBank() throws IOException {
+    public void shutDownWithBank() {
         Message message = new Message.Builder()
                 .command(Message.Command.DEREGISTER_CLIENT)
                 .accountId(accountNumber)
@@ -160,12 +167,22 @@ public class Agent {
         sendToBank(message);
     }
 
-    private void sendToBank(Message message) throws IOException {
+    private void sendToBank(Message message) {
         try {
             bankOut.writeObject(message);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void transferFunds(Double amount) {
+        Message message = new Message.Builder()
+                .command(Message.Command.TRANSFER)
+                .amount(amount)
+                .accountId(auctionID)
+                .send(accountNumber);
+        sendToBank(message);
+
     }
 
     public ArrayList<Item> getWonItems() {
@@ -214,10 +231,6 @@ public class Agent {
                     accountNumber = message.getAccountId();
                     System.out.println("got it");
                 }
-                if (message.getAmount()!= null) {
-                    //System.out.println("Balance Updated by Bank");
-                    balance = message.getAmount();
-                }
 
                 if (message.getResponse() != null) {
                     switch (message.getResponse()) {
@@ -244,9 +257,12 @@ public class Agent {
 
                                 }
                                 case GET_AVAILABLE: {
-                                    display.printBalance();
+                                    availableBalance = message.getAmount();
                                     break;
 
+                                }
+                                case GET_RESERVED: {
+                                    reservedBalance = message.getAmount();
                                 }
 
                             }
@@ -304,7 +320,7 @@ public class Agent {
 
         }
         // we need a de register with auction house
-        public void deRegisterAuctionHouse() throws IOException {
+        public void deRegisterAuctionHouse() {
             AuctionMessage message = AuctionMessage.Builder.newB()
                     .type(AuctionMessage.AMType.DEREGISTER)
                     .id(accountNumber).build();
@@ -333,7 +349,6 @@ public class Agent {
         }
 
         public void getUpdatedCatalogue() throws IOException {
-            System.out.println("this isnt printing right??");
             AuctionMessage updateMessage = new AuctionMessage.Builder().newB()
                     .type(AuctionMessage.AMType.UPDATE)
                     .id(accountNumber)
@@ -341,7 +356,7 @@ public class Agent {
             sendToAH(updateMessage);
         }
 
-    private void sendToAH(AuctionMessage message) throws IOException {
+    private void sendToAH(AuctionMessage message) {
         try {
             auctionOut.writeObject(message);
             System.out.println(message.toString());
@@ -360,8 +375,11 @@ public class Agent {
                 System.out.println("listening to AH");
                 try {
                     auctionIn = new ObjectInputStream(auctionClient.getInputStream());
-                    message = (AuctionMessage) auctionIn.readObject(); //?
-                    processAuctionMessage(message);
+                    while(getConnectedToAH()) {
+                        message = (AuctionMessage) auctionIn.readObject(); //?
+                        System.out.println(message.toString());
+                        processAuctionMessage(message);
+                    }
                 } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
                 }
@@ -371,11 +389,18 @@ public class Agent {
                 if (message.getType() == AuctionMessage.AMType.ACCEPTANCE) {
                     activeBid = true;
                 }
-                System.out.println("theres been an update to catatlogue");
-                catalogue = message.getCatalogue();
+
                 switch (message.getType()) {
                     case REGISTER: {
+                        catalogue = message.getCatalogue();
+                        auctionID = message.getId();
 
+
+                        break;
+                    }
+                    case UPDATE: {
+
+                        catalogue = message.getCatalogue();
                         break;
                     }
                     case OUTBID: {
@@ -396,6 +421,7 @@ public class Agent {
                     case WINNER: {
                         // need to determine how we are handling "winning an item"
                         //not that important.
+                        transferFunds(message.getAmount());
                         for (Item item : currentlyBidding) {
                             if (message.getItem()== item.getItemID()) {
                                 currentlyBidding.remove(item);
@@ -405,6 +431,7 @@ public class Agent {
                                 activeBid = false;
                             }
                         }
+
                         break;
                         //display.wonAnItem();
                         //display.auctionHouseMenu();
@@ -420,6 +447,7 @@ public class Agent {
 
                     case ACCEPTANCE: {
                         //update which items the agent is now biddin on
+
                         currentlyBidding.add(attemptedBid);
                         //display.auctionHouseMenu();
 

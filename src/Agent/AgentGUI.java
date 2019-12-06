@@ -89,7 +89,7 @@ public class AgentGUI extends Application {
         ScrollPane display = new ScrollPane();
         display.setMinSize(150,100);
         aHLBox.setAlignment(Pos.CENTER);
-        aHLBox.setMaxWidth(100);
+        aHLBox.setMaxWidth(50);
         display.setContent(aHLBox);
         bPane.setLeft(display);
 
@@ -121,6 +121,8 @@ public class AgentGUI extends Application {
 
         Button refreshAHList = new Button("refresh");
         EventHandler<ActionEvent> refresh = e-> {
+            agent.updateBalance();
+            updateBalances();
             updateAHList();
         };
         refreshAHList.setOnAction(refresh);
@@ -129,11 +131,11 @@ public class AgentGUI extends Application {
 
         Button deposit = new Button("Deposit");
         EventHandler<ActionEvent> event = e -> {
-            double depositIn = Double.parseDouble(depositAmount.getText().toString());
             try {
+                double depositIn = Double.parseDouble(depositAmount.getText());
                 agent.bankDeposit(depositIn);
-            } catch (IOException ex) {
-                ex.printStackTrace();
+            } catch (IOException | NumberFormatException ex2) {
+                ex2.printStackTrace();
             }
 
         };
@@ -146,15 +148,16 @@ public class AgentGUI extends Application {
         Button bidButton = new Button("send Bid");
         EventHandler<ActionEvent> bid = e -> {
             try {
-                double bidInput = Double.parseDouble(bidAmount.toString());
-                int choiceInput = Integer.parseInt(itemChoice.toString());
+                double bidInput = Double.parseDouble(bidAmount.getText());
+                int choiceInput = Integer.parseInt(itemChoice.getText());
                 System.out.println("sending bid");
-                agent.sendBidToAH(choiceInput, bidInput);
+                agent.sendBidToAH(choiceInput - 1, bidInput);
 
             } catch (NumberFormatException | IOException nMF) {
 
             }
         };
+        bidButton.setOnAction(bid);
         Text bidAmountLabel = new Text("Bid Amount:");
         Text itemChoiceLabel = new Text("Item Choice: ");
         bidButton.setOnAction(bid);
@@ -169,7 +172,27 @@ public class AgentGUI extends Application {
 
     }
 
+    private void updateAHList() {
+        aHLBox.getChildren().clear();
+        if (auctionHouses != null) {
+            int i = 0;
+            for (NetInfo netInfo : auctionHouses) {
+                i++;
+                HBox guiItem = new HBox();
+                Text info = new Text(i + " :" + netInfo.toString());
+                guiItem.getChildren().add(info);
+                aHLBox.getChildren().add(guiItem);
+            }
+            try {
+                agent.requestAHList();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private void shutDownAH() {
+        agent.deRegisterAuctionHouse();
     }
 
 
@@ -216,7 +239,9 @@ public class AgentGUI extends Application {
     }
 
     private void shutDown() {
+        agent.shutDownWithBank();
     }
+
 
     private void agentWindowSetup() {
         agentWindow.setMinHeight(100);
@@ -225,30 +250,6 @@ public class AgentGUI extends Application {
         bPane.setTop(agentWindow);
     }
 
-    private void updateItemList() {
-        int i = 0;
-        for (Item item : catalogue) {
-            i++;
-            HBox guiItem = new HBox();
-            String info = i+": "+item.name();
-            info = info.concat("         ");
-            info = info + item.getCurrentBid();
-            info = info.concat("         ");
-            info = info + item.getTimeLeft();
-            info = info.concat("         ");
-            Text name = new Text(info);
-            guiItem.getChildren().add(name);
-            itemBox.getChildren().add(guiItem);
-        }
-        if (agent.getConnectedToAH()) {
-            try {
-                agent.getUpdatedCatalogue();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-    }
 
 
     private void createAgent() throws IOException {
@@ -293,7 +294,6 @@ public class AgentGUI extends Application {
     }
 
     private void update() {
-        aHLBox.getChildren().clear();
         itemBox.getChildren().clear();
         agentWindow.getChildren().clear();
         catalogue = agent.getCatalogue();
@@ -318,24 +318,31 @@ public class AgentGUI extends Application {
         agentWindow.getChildren().addAll(bItem, abItem);
     }
 
-
-    private void updateAHList() {
-        if (auctionHouses != null) {
-            int i = 0;
-            for (NetInfo netInfo : auctionHouses) {
-                i++;
-                HBox guiItem = new HBox();
-                Text info = new Text(i + " :" + netInfo.toString());
-                guiItem.getChildren().add(info);
-                aHLBox.getChildren().add(guiItem);
-            }
+    private void updateItemList() {
+        int i = 0;
+        for (Item item : catalogue) {
+            i++;
+            HBox guiItem = new HBox();
+            String info = i+": "+item.name();
+            info = info.concat("         ");
+            info = info + item.getCurrentBid();
+            info = info.concat("         ");
+            info = info + item.getTimeLeft();
+            info = info.concat("         ");
+            Text name = new Text(info);
+            guiItem.getChildren().add(name);
+            itemBox.getChildren().add(guiItem);
+        }
+        if (agent.getConnectedToAH()) {
             try {
-                agent.requestAHList();
+                agent.getUpdatedCatalogue();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+
     }
+
 
 
     public static void main(String[] args) {
