@@ -66,13 +66,13 @@ public class AgentGUI extends Application {
         connectToBankWindow();
         auctionHousesWindow();
         biddingWindowSetup();
-        Scene scene = new Scene(bPane, 600,600);
+        Scene scene = new Scene(bPane, 800,600);
        // agent.connectToAuctionHouse(-1);
         primaryStage.setOnCloseRequest(e -> {
             Platform.exit();
             System.exit(0);
         });
-        primaryStage.setTitle("Distributed AGent");
+        primaryStage.setTitle("Distributed Agent");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
@@ -245,6 +245,7 @@ public class AgentGUI extends Application {
 
     private void agentWindowSetup() {
         agentWindow.setMinHeight(100);
+        agentWindow.setAlignment(Pos.CENTER);
         agentWindow.getChildren().add(balance);
         agentWindow.getChildren().add(available);
         bPane.setTop(agentWindow);

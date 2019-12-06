@@ -94,15 +94,11 @@ public class Agent {
 
 
     public void registerBank() throws IOException {
-        // create a message and send it to the bank using the message class...
         try {
-            //System.out.println("Connecting to the bank!");
             System.out.println(bankHostName);
             System.out.println(bankPortNumber);
             bankClient = new Socket(bankHostName, bankPortNumber);
             connectedToBank = true;
-
-            //System.out.println("Connected");
             bankOut = new ObjectOutputStream(bankClient.getOutputStream());
         } catch (IOException u) {
             u.printStackTrace();
@@ -239,27 +235,12 @@ public class Agent {
                                 accountNumber = message.getAccountId();
                             }
                             switch (message.getCommand()) {
-                                case DEPOSIT: {
+                                case DEPOSIT:
+                                case GET_AVAILABLE: {
                                     //System.out.println("should call print deposit");
                                     //display.printDepositBalance();
-
-                                    break;
-                                }
-                                case HOLD: {
-                                    break;
-                                }
-                                case RELEASE_HOLD: {
-                                    break;
-
-                                }
-                                case TRANSFER: {
-                                    break;
-
-                                }
-                                case GET_AVAILABLE: {
                                     availableBalance = message.getAmount();
                                     break;
-
                                 }
                                 case GET_RESERVED: {
                                     reservedBalance = message.getAmount();
