@@ -42,9 +42,9 @@ public class AuctionGui extends Application {
      * done: boolean to end the program
      */
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("0.0.0.0");
-    private TextField portInput = new TextField("");
-    private TextField serverInput = new TextField("");
+    private TextField ipInputField = new TextField("10.1.10.57");
+    private TextField portInput = new TextField("4444");
+    private TextField serverInput = new TextField("3500");
     private ArrayList<Item> catalogue = new ArrayList<>();
     private VBox listDisplay = new VBox();
     private AuctionHouse auction;
@@ -172,6 +172,7 @@ public class AuctionGui extends Application {
     private Runnable uiUpdater = () ->{
         Runnable updater = this::update;
         if(auction.checkRegistration()){
+            System.out.println("connection worked");
             catalogue = auction.getCatalogue();
             log = auction.getLog();
             id.setText("ID: "+ auction.getShortId(auction.getAuctionId()));
@@ -185,8 +186,7 @@ public class AuctionGui extends Application {
             }
             Platform.runLater(this::finish);
         }else{
-            Text fail = new Text("connection failed");
-            vLog.getChildren().add(fail);
+            System.out.println("connection failed");
         }
     };
 

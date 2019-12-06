@@ -76,7 +76,6 @@ public class AuctionHouse{
             inThread.start();
             } catch(IOException u){
             check.add(false);
-            System.out.println("Start up/ connection failed");
         }
     }
 
@@ -118,7 +117,7 @@ public class AuctionHouse{
                     client.start();
                 }
             }catch (IOException e){
-                System.out.println("Server is closed");
+                //System.out.println("Server is closed");
             }
         }
     }
@@ -174,14 +173,17 @@ public class AuctionHouse{
                     agentShutdown(false);
                     message = null;
                 }
-            }while(message != null);
+            }while(message != null && run);
         }
 
         /**
          *This method either gracefully or forcefully closes the AgentProxy's
-         * socket, streams, and threads.
+         * socket, streams, and threads.A graceful shutdown means messaging
+         * agents to let them know the auction house is shutting down. A
+         * forceful shutdown means either to shutdown from a DEREGISTER message
+         * or shutdown due to Exceptions
          * @param reason True if a graceful shutdown, false if for
-         *               error handling
+         *               error handling/DEREGISTER message
          */
         private void agentShutdown(Boolean reason){
             try{
@@ -191,7 +193,7 @@ public class AuctionHouse{
                             .type(AuctionMessage.AMType.DEREGISTER)
                             .build();
                     sendOut(shutdown);
-                    log.add("Connection to Auction " +agentId+"closed");
+                    log.add("Connection to Agent " +agentId+" closed");
                     if(!agentSocket.isClosed()){
                         agentOut.close();
                         agentIn.close();
@@ -200,7 +202,6 @@ public class AuctionHouse{
                     activeAgents.remove(this);
                 }else{
                     System.out.println(activeAgents.size());
-                    System.out.println("socket/stream error");
                     if(!agentSocket.isClosed()){
                         agentOut.close();
                         agentIn.close();
@@ -209,7 +210,8 @@ public class AuctionHouse{
                     activeAgents.remove(this);
                 }
             }catch (IOException e){
-                System.out.println("error in shutdown method");
+                e.printStackTrace();
+                //System.out.println("error in shutdown method");
             }
         }
 
@@ -231,7 +233,7 @@ public class AuctionHouse{
                     update();
                     break;
                 case DEREGISTER:
-                    agentShutdown(true);
+                    agentShutdown(false);
                     break;
                 default: System.out.println(type);
             }
@@ -472,7 +474,11 @@ public class AuctionHouse{
             log.add("To Bank: "+ message);
             out.reset();
             out.writeObject(message);
-        } catch (IOException e) {
+            if(message.getCommand() == Command.DEREGISTER_AH){
+                Boolean ok = true;
+                check.put(ok);
+            }
+        } catch (IOException |InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -631,6 +637,11 @@ public class AuctionHouse{
                     .command(Command.DEREGISTER_AH)
                     .netInfo(ahInfo).send(auctionId);
             sendToBank(deregister);
+            try{
+                Boolean check = this.check.take();
+            }catch(InterruptedException e){
+                e.printStackTrace();
+            }
             out.close();
             input.close();
             server.close();
