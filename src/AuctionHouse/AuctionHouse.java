@@ -76,7 +76,6 @@ public class AuctionHouse{
             inThread.start();
             } catch(IOException u){
             check.add(false);
-            System.out.println("Start up/ connection failed");
         }
     }
 
@@ -103,6 +102,106 @@ public class AuctionHouse{
     }
 
     /**
+     * This class is dedicated to handling messages sent from an specific agent.
+     */
+    private class AuctionIn implements Runnable {
+        /**
+         * loop to wait for new messages forever(until an exception is thrown).
+         * Incoming messages that aren't looped (GET_AVAILABLE) are added
+         * to the log.
+         */
+        @Override
+        public void run() {
+            try {
+                input = new ObjectInputStream(auctionClient.getInputStream());
+                while(run){
+                    Message message = (Message) input.readObject();
+                    Command temp = message.getCommand();
+                    if(temp != Command.GET_AVAILABLE){
+                        log.add("Bank: " + message);
+                    }
+                    processMessage(message);
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch(IOException e){
+                try {
+                    input.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+
+        private void processMessage(Message message){
+            Command type = message.getCommand();
+            switch(type){
+                case HOLD:
+                    hold(message);
+                    break;
+                case RELEASE_HOLD:
+                    released(message);
+                    break;
+                case REGISTER_AH:
+                    registered(message);
+                    break;
+                case GET_AVAILABLE:
+                    bankBalance(message);
+                    break;
+            }
+        }
+
+        private void hold(Message message) {
+            UUID bidder = message.getAccountId();
+            Message.Response response = message.getResponse();
+            AgentProxy temp = agentSearch(bidder);
+            if (temp != null) {
+                if (response == Message.Response.SUCCESS) {
+                    try{
+                        temp.bankSignOff.put(true);
+                    }catch (InterruptedException e){
+                        e.printStackTrace();
+                    }
+                }else if(response == Message.Response.INSUFFICIENT_FUNDS){
+                    try{
+                        temp.bankSignOff.put(false);
+                    }catch (InterruptedException e){
+                        e.printStackTrace();
+                    }
+                }
+            }else{
+                System.out.println("Not Good");
+            }
+        }
+
+        /**
+         * updates the balance variable to the bank balance given by the bank,
+         *
+         * @param message the message with the available balance for this object
+         */
+        private void bankBalance(Message message) {
+            balance = message.getAmount();
+        }
+
+        private void released(Message message){
+            Message.Response response = message.getResponse();
+            if(response == Message.Response.SUCCESS){
+                System.out.println("release was successful");
+            }else{
+                System.out.println("release failed");
+            }
+        }
+        private void registered(Message message){
+            auctionId = message.getAccountId();
+            addItems(4);
+            check.add(true);
+            Thread timer = new Thread(new Countdown());
+            timer.setDaemon(true);
+            timer.setPriority(4);
+            timer.start();
+        }
+    }
+    /**
      * This inner class is dedicated to creating AuctionProxys for each
      * socket join request.
      */
@@ -118,13 +217,14 @@ public class AuctionHouse{
                     client.start();
                 }
             }catch (IOException e){
-                System.out.println("Server is closed");
+                //System.out.println("Server is closed");
             }
         }
     }
 
     /**
-     * This class is dedicated to communicating/processing messages from agents.
+     * This class is dedicated to communicating/processing messages from/with
+     * agents.
      * Each instance of this class represents communication with one agent.
      */
     private class AgentProxy implements Runnable {
@@ -174,14 +274,17 @@ public class AuctionHouse{
                     agentShutdown(false);
                     message = null;
                 }
-            }while(message != null);
+            }while(message != null && run);
         }
 
         /**
          *This method either gracefully or forcefully closes the AgentProxy's
-         * socket, streams, and threads.
+         * socket, streams, and threads.A graceful shutdown means messaging
+         * agents to let them know the auction house is shutting down. A
+         * forceful shutdown means either to shutdown from a DEREGISTER message
+         * or shutdown due to Exceptions
          * @param reason True if a graceful shutdown, false if for
-         *               error handling
+         *               error handling/DEREGISTER message
          */
         private void agentShutdown(Boolean reason){
             try{
@@ -191,7 +294,7 @@ public class AuctionHouse{
                             .type(AuctionMessage.AMType.DEREGISTER)
                             .build();
                     sendOut(shutdown);
-                    log.add("Connection to Auction " +agentId+"closed");
+                    log.add("Connection to Agent " +agentId+" closed");
                     if(!agentSocket.isClosed()){
                         agentOut.close();
                         agentIn.close();
@@ -200,7 +303,6 @@ public class AuctionHouse{
                     activeAgents.remove(this);
                 }else{
                     System.out.println(activeAgents.size());
-                    System.out.println("socket/stream error");
                     if(!agentSocket.isClosed()){
                         agentOut.close();
                         agentIn.close();
@@ -209,7 +311,8 @@ public class AuctionHouse{
                     activeAgents.remove(this);
                 }
             }catch (IOException e){
-                System.out.println("error in shutdown method");
+                e.printStackTrace();
+                //System.out.println("error in shutdown method");
             }
         }
 
@@ -231,7 +334,7 @@ public class AuctionHouse{
                     update();
                     break;
                 case DEREGISTER:
-                    agentShutdown(true);
+                    agentShutdown(false);
                     break;
                 default: System.out.println(type);
             }
@@ -465,106 +568,23 @@ public class AuctionHouse{
 
     /**
      * Sends the given message to the bank and adds it to the log for display.
+     * Looped messages (GET_AVAILABLE) are ignored when adding to log.
      * @param message message being sent to the bank.
      */
     private synchronized void sendToBank(Message message) {
         try {
-            log.add("To Bank: "+ message);
+            Command temp = message.getCommand();
+            if(temp != Command.GET_AVAILABLE){
+                log.add("Bank: " + message);
+            }
             out.reset();
             out.writeObject(message);
-        } catch (IOException e) {
+            if(message.getCommand() == Command.DEREGISTER_AH){
+                Boolean ok = true;
+                check.put(ok);
+            }
+        } catch (IOException |InterruptedException e) {
             e.printStackTrace();
-        }
-    }
-
-    /**
-     * This class is dedicated to handling messages sent from an specific agent.
-     */
-    private class AuctionIn implements Runnable {
-        @Override
-        public void run() {
-            try {
-                input = new ObjectInputStream(auctionClient.getInputStream());
-                while(run){
-                    Message message = (Message) input.readObject();
-                    log.add("Bank: " + message);
-                    processMessage(message);
-                }
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch(IOException e){
-                try {
-                    input.close();
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        }
-
-        private void processMessage(Message message){
-            Command type = message.getCommand();
-            switch(type){
-                case HOLD:
-                    hold(message);
-                    break;
-                case RELEASE_HOLD:
-                    released(message);
-                    break;
-                case REGISTER_AH:
-                    registered(message);
-                    break;
-                case GET_AVAILABLE:
-                case TRANSFER:
-                    bankBalance(message);
-                    break;
-                default:
-                    System.out.println("uh oh");
-            }
-        }
-
-        private void bankBalance(Message message) {
-            balance = message.getAmount();
-        }
-
-        private void hold(Message message) {
-            UUID bidder = message.getAccountId();
-            Message.Response response = message.getResponse();
-            AgentProxy temp = agentSearch(bidder);
-            if (temp != null) {
-                if (response == Message.Response.SUCCESS) {
-                    try{
-                        temp.bankSignOff.put(true);
-                    }catch (InterruptedException e){
-                        e.printStackTrace();
-                    }
-                }else if(response == Message.Response.INSUFFICIENT_FUNDS){
-                    try{
-                        temp.bankSignOff.put(false);
-                    }catch (InterruptedException e){
-                        e.printStackTrace();
-                    }
-                }
-            }else{
-                System.out.println("Not Good");
-            }
-        }
-
-        private void released(Message message){
-            Message.Response response = message.getResponse();
-            if(response == Message.Response.SUCCESS){
-                System.out.println("release was successful");
-            }else{
-                System.out.println("release failed");
-            }
-        }
-        private void registered(Message message){
-            auctionId = message.getAccountId();
-            addItems(4);
-            check.add(true);
-            Thread timer = new Thread(new Countdown());
-            timer.setDaemon(true);
-            timer.setPriority(4);
-            timer.start();
         }
     }
 
@@ -631,6 +651,11 @@ public class AuctionHouse{
                     .command(Command.DEREGISTER_AH)
                     .netInfo(ahInfo).send(auctionId);
             sendToBank(deregister);
+            try{
+                Boolean check = this.check.take();
+            }catch(InterruptedException e){
+                e.printStackTrace();
+            }
             out.close();
             input.close();
             server.close();
@@ -640,6 +665,14 @@ public class AuctionHouse{
         }catch(IOException e){
             e.printStackTrace();
         }
+    }
+
+    public void getBankBalance(){
+        Message getAvailable = new Message
+                .Builder()
+                .command(Command.GET_AVAILABLE)
+                .send(auctionId);
+        sendToBank(getAvailable);
     }
 
     /**

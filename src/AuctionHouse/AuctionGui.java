@@ -42,7 +42,7 @@ public class AuctionGui extends Application {
      * done: boolean to end the program
      */
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("0.0.0.0");
+    private TextField ipInputField = new TextField("");
     private TextField portInput = new TextField("");
     private TextField serverInput = new TextField("");
     private ArrayList<Item> catalogue = new ArrayList<>();
@@ -130,6 +130,7 @@ public class AuctionGui extends Application {
         logDisplay.setPrefViewportHeight(150);
         logDisplay.setFitToWidth(true);
         logDisplay.setContent(vLog);
+        logDisplay.vvalueProperty().bind(vLog.heightProperty());
         bPane.setBottom(logDisplay);
     }
 
@@ -139,7 +140,6 @@ public class AuctionGui extends Application {
      * the uiUpdater thread
      */
     private void createAuctionHouse(){
-        connect.setDisable(true);
         done = false;
         String bankIp = ipInputField.getText();
         int bankPort = Integer.parseInt(portInput.getText());
@@ -172,6 +172,8 @@ public class AuctionGui extends Application {
     private Runnable uiUpdater = () ->{
         Runnable updater = this::update;
         if(auction.checkRegistration()){
+            connect.setDisable(true);
+            System.out.println("connection worked");
             catalogue = auction.getCatalogue();
             log = auction.getLog();
             id.setText("ID: "+ auction.getShortId(auction.getAuctionId()));
@@ -185,20 +187,9 @@ public class AuctionGui extends Application {
             }
             Platform.runLater(this::finish);
         }else{
-            Text fail = new Text("connection failed");
-            vLog.getChildren().add(fail);
+            System.out.println("connection failed");
         }
     };
-
-    /**
-     * begins shutting down the auction house and prepares for a reset.
-     */
-    private void shutdown(){
-        auction.shutdown();
-        done = true;
-        connect.setDisable(false);
-        disconnect.setDisable(true);
-    }
 
     /**
      * used to keep track of what index the vLog would be at if it was a List
@@ -209,6 +200,7 @@ public class AuctionGui extends Application {
      * In this case it updates the catalogue, balance, and log.
      */
     private void update(){
+        auction.getBankBalance();
         listDisplay.getChildren().clear();
         int size = log.size();
         if(displayIndex < size){
@@ -250,6 +242,15 @@ public class AuctionGui extends Application {
         return noBidding;
     }
 
+    /**
+     * begins shutting down the auction house and prepares for a reset.
+     */
+    private void shutdown(){
+        auction.shutdown();
+        done = true;
+        connect.setDisable(false);
+        disconnect.setDisable(true);
+    }
 
     /**
      * method to clean up the display after shutting down

@@ -81,22 +81,28 @@ public class Message implements Serializable {
 
     /**
      * Get a list of the NetInfo of the auction houses.
+     *
      * @return List<NetInfo></NetInfo>
      */
     public List<NetInfo> getNetInfo() {
         return netInfo;
     }
 
+    /**
+     * Return a string of non null values.
+     *
+     * @return String
+     */
     @Override
     public String toString() {
-        return "Message{" +
-                "amount=" + amount +
-                ", sender=" + sender +
-                ", accountId=" + accountId +
-                ", command=" + command +
-                ", response=" + response +
-                ", netInfo=" + netInfo +
-                '}';
+        String message = "{";
+        if (amount != null) message += ("amount=" + amount);
+        if (sender != null) message += ("\n\t\tsender=" + sender);
+        if (accountId != null) message += ("\n\t\taccountId=" + accountId);
+        if (command != null) message += ("\n\t\tcommand=" + command);
+        if (response != null) message += ("\n\t\tresponse=" + response);
+        if (netInfo != null) message += ("\n\t\tnetInfo=" + netInfo);
+        return message + "}";
     }
 
     /**

@@ -85,6 +85,7 @@ public class Bank {
         for (NetInfo netInfo : auctionHouseNetInfo) {
             if (iNetAddress.equals(netInfo.getIp())) {
                 delete = netInfo;
+                break;
             }
         }
         auctionHouseNetInfo.remove(delete);

@@ -16,6 +16,7 @@ public class Connection implements Runnable {
     private final Bank bank;
     private final ConnectionLoggerService connectionLoggerService;
     private boolean running = true;
+    private Message.Command connectionType = null;
     /**
      * The connection object handles the communication between the bank and
      * the clients.
@@ -61,6 +62,7 @@ public class Connection implements Runnable {
                     + socket.getInetAddress().getHostName());
             Message message = readMessage();
             if (message.getCommand() == Message.Command.REGISTER_CLIENT) {
+                connectionType = Message.Command.REGISTER_CLIENT;
                 writeMessage(new Message.Builder()
                         .accountId(bank.registerClient())
                         .response(Message.Response.SUCCESS)
@@ -68,7 +70,7 @@ public class Connection implements Runnable {
                         .send(bank.getId()));
             }
             if (message.getCommand() == Message.Command.REGISTER_AH) {
-                System.out.println("here");
+                connectionType = Message.Command.REGISTER_AH;
                 writeMessage(new Message.Builder()
                         .accountId(bank.registerAuctionHouse(
                                 message.getNetInfo().get(0)))
@@ -105,7 +107,8 @@ public class Connection implements Runnable {
                             System.out.println(message.getAmount());
                         } else {
                             writeMessage(new Message.Builder()
-                                    .response(Message.Response.INSUFFICIENT_FUNDS)
+                                    .response(
+                                            Message.Response.INSUFFICIENT_FUNDS)
                                     .command(Message.Command.HOLD)
                                     .accountId(message.getAccountId())
                                     .send(bank.getId()));
@@ -124,7 +127,8 @@ public class Connection implements Runnable {
                                     .send(bank.getId()));
                         } else {
                             writeMessage(new Message.Builder()
-                                    .response(Message.Response.INSUFFICIENT_FUNDS)
+                                    .response(
+                                            Message.Response.INSUFFICIENT_FUNDS)
                                     .command(Message.Command.RELEASE_HOLD)
                                     .amount(message.getAmount())
                                     .send(bank.getId()));
@@ -206,7 +210,10 @@ public class Connection implements Runnable {
                 ex.printStackTrace();
             }
         } catch (IOException e) {
-            bank.auctionHouseConnDrop(socket.getInetAddress().getHostAddress());
+            if (connectionType == Message.Command.REGISTER_AH) {
+                bank.auctionHouseConnDrop(
+                        socket.getInetAddress().getHostAddress());
+            }
             connectionLoggerService.add("Connection dropped : "
                     + socket.getInetAddress().getHostName());
             this.closeThread();
@@ -221,7 +228,7 @@ public class Connection implements Runnable {
      */
     private void writeMessage(Message message) throws IOException {
         Message.Command temp = message.getCommand();
-        if(temp!= Message.Command.GET_RESERVED&& temp!= Message.Command.GET_AVAILABLE){
+        if (temp != Message.Command.GET_RESERVED && temp != Message.Command.GET_AVAILABLE) {
             connectionLoggerService.add("Bank : " + message.toString());
         }
         objectOutputStream.reset();
