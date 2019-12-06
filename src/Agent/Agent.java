@@ -40,6 +40,7 @@ public class Agent {
     private boolean activeBid;
 
     private double balance;
+    private double availableBalance;
     private UUID accountNumber;
 
     private List<NetInfo> auctionHouses;
@@ -165,6 +166,18 @@ public class Agent {
 
     public ArrayList<Item> getWonItems() {
         return wonItems;
+    }
+
+    public boolean getActiveBid() {
+        return true;
+    }
+
+    public double getAvailableBalance() {
+        return availableBalance;
+    }
+
+    public boolean getConnectedToBank() {
+        return connectedToBank;
     }
 
 
