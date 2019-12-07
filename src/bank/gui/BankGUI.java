@@ -19,10 +19,10 @@ public class BankGUI extends Application {
     public void start(Stage primaryStage) {
         Parameters parameters = this.getParameters();
         int portNumber;
-        try {
-            portNumber = Integer.parseInt(parameters.getRaw().get(0));
-        } catch (NumberFormatException ignored) {
+        if (parameters.getRaw().isEmpty()) {
             portNumber = 4444;
+        } else {
+            portNumber = Integer.parseInt(parameters.getRaw().get(0));
         }
         try {
             new BankServer(portNumber, new Bank()).start();
