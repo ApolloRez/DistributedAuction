@@ -42,9 +42,9 @@ public class AuctionGui extends Application {
      * done: boolean to end the program
      */
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("10.1.10.57");
-    private TextField portInput = new TextField("4444");
-    private TextField serverInput = new TextField("4500");
+    private TextField ipInputField = new TextField("64.106.20.215");
+    private TextField portInput = new TextField("4445");
+    private TextField serverInput = new TextField("4700");
     private ArrayList<Item> catalogue = new ArrayList<>();
     private VBox listDisplay = new VBox();
     private AuctionHouse auction;

@@ -9,10 +9,7 @@ import shared.NetInfo;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -67,7 +64,8 @@ public class AuctionHouse{
         log = new ArrayList<>();
         try{
             log.add("Connecting to bank");
-            auctionClient = new Socket(address, clientPort);
+            auctionClient = new Socket();
+            auctionClient.connect( new InetSocketAddress(address,clientPort),2000);
             server = new ServerSocket(serverPort);
             Thread serverThread = new Thread(new AuctionServer());
             serverThread.start();
@@ -586,9 +584,6 @@ public class AuctionHouse{
             }
             out.reset();
             out.writeObject(message);
-            if(temp == Command.DEREGISTER_AH){
-                check.add(true);
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -631,11 +626,7 @@ public class AuctionHouse{
      */
     public boolean checkRegistration(){
         try{
-            Boolean temp = check.take();
-            if(temp == null){
-                return false;
-            }
-            return temp;
+            return check.take();
         }catch(InterruptedException e){
             e.printStackTrace();
         }
@@ -657,11 +648,6 @@ public class AuctionHouse{
                     .command(Command.DEREGISTER_AH)
                     .netInfo(ahInfo).send(auctionId);
             sendToBank(deregister);
-            try{
-                Boolean check = this.check.take();
-            }catch(InterruptedException e){
-                e.printStackTrace();
-            }
             out.close();
             input.close();
             server.close();
