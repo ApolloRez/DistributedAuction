@@ -42,9 +42,9 @@ public class AuctionGui extends Application {
      * done: boolean to end the program
      */
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("");
-    private TextField portInput = new TextField("");
-    private TextField serverInput = new TextField("");
+    private TextField ipInputField = new TextField("10.1.10.57");
+    private TextField portInput = new TextField("4444");
+    private TextField serverInput = new TextField("4500");
     private ArrayList<Item> catalogue = new ArrayList<>();
     private VBox listDisplay = new VBox();
     private AuctionHouse auction;
@@ -117,7 +117,7 @@ public class AuctionGui extends Application {
     }
 
     /**
-     * setups the Left port of bPane with id, balance
+     * setups the Left port of bPane with auction id and balance
      */
     private void setupLeftWindow(){
         VBox left = new VBox();
@@ -158,6 +158,9 @@ public class AuctionGui extends Application {
             vLog.getChildren().add(text);
             return;
         }
+        //if(auction != null){
+        //    auction.shutdown();
+        //}
         auction = new AuctionHouse(bankIp,bankPort,serverPort);
         Thread thread = new Thread(uiUpdater);
         thread.setDaemon(true);
@@ -230,8 +233,7 @@ public class AuctionGui extends Application {
     /**
      * updates the display with the current catalogue (time left included).
      * Method also acts a way to check if there are any bidders, and
-     * prevents shutdown if it finds any
-     * @return returns true if a bidder was found, false otherwise
+     * prevents shutdown if it finds any.
      */
     private boolean isBid = false;
     private void updateCatalogue(){

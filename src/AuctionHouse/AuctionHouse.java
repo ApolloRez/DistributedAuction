@@ -87,6 +87,7 @@ public class AuctionHouse{
             Thread inThread = new Thread(new AuctionIn());
             inThread.start();
             } catch(IOException u){
+            u.printStackTrace();
             check.add(false);
         }
     }
@@ -585,11 +586,10 @@ public class AuctionHouse{
             }
             out.reset();
             out.writeObject(message);
-            if(message.getCommand() == Command.DEREGISTER_AH){
-                Boolean ok = true;
-                check.put(ok);
+            if(temp == Command.DEREGISTER_AH){
+                check.add(true);
             }
-        } catch (IOException |InterruptedException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -666,6 +666,7 @@ public class AuctionHouse{
             input.close();
             server.close();
             while(!activeAgents.isEmpty()){
+                activeAgents.get(0).message = null;
                 activeAgents.get(0).agentShutdown(true);
             }
         }catch(IOException e){
