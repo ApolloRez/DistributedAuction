@@ -68,8 +68,13 @@ public class AuctionGui extends Application {
         setupCatalogue();
         Scene scene = new Scene(bPane,500,450);
         stage.setOnCloseRequest(e -> {
-            Platform.exit();
-            System.exit(0);
+            e.consume();
+            if(!isBid){
+                Platform.exit();
+                System.exit(0);
+            }else{
+                log.add("Bidding in progress. Cannot exit.");
+            }
         });
         EventHandler<ActionEvent> event = e -> shutdown();
         disconnect.setOnAction(event);
@@ -141,9 +146,18 @@ public class AuctionGui extends Application {
      */
     private void createAuctionHouse(){
         done = false;
+        vLog.getChildren().clear();
         String bankIp = ipInputField.getText();
-        int bankPort = Integer.parseInt(portInput.getText());
-        int serverPort = Integer.parseInt(serverInput.getText());
+        int bankPort, serverPort;
+        try{
+            bankPort = Integer.parseInt(portInput.getText());
+            serverPort = Integer.parseInt(serverInput.getText());
+        }
+        catch(NumberFormatException e){
+            Text text = new Text("bank/server port input error");
+            vLog.getChildren().add(text);
+            return;
+        }
         auction = new AuctionHouse(bankIp,bankPort,serverPort);
         Thread thread = new Thread(uiUpdater);
         thread.setDaemon(true);
@@ -173,7 +187,6 @@ public class AuctionGui extends Application {
         Runnable updater = this::update;
         if(auction.checkRegistration()){
             connect.setDisable(true);
-            System.out.println("connection worked");
             catalogue = auction.getCatalogue();
             log = auction.getLog();
             id.setText("ID: "+ auction.getShortId(auction.getAuctionId()));
@@ -187,7 +200,7 @@ public class AuctionGui extends Application {
             }
             Platform.runLater(this::finish);
         }else{
-            System.out.println("connection failed");
+            Platform.runLater(this::failed);
         }
     };
 
@@ -210,9 +223,8 @@ public class AuctionGui extends Application {
             }
             displayIndex = size;
         }
-        boolean noBidding = updateCatalogue();
+        updateCatalogue();
         balance.setText("Balance: "+auction.getBalance());
-        disconnect.setDisable(noBidding);
     }
 
     /**
@@ -221,12 +233,13 @@ public class AuctionGui extends Application {
      * prevents shutdown if it finds any
      * @return returns true if a bidder was found, false otherwise
      */
-    private Boolean updateCatalogue(){
-        boolean noBidding = false;
+    private boolean isBid = false;
+    private void updateCatalogue(){
+        isBid = false;
         for (Item item : catalogue) {
             HBox guiItem = new HBox();
             if(item.getBidder() != null){
-                noBidding = true;
+                isBid = true;
             }
             String info = item.name();
             info = info.concat("         ");
@@ -239,8 +252,13 @@ public class AuctionGui extends Application {
             guiItem.getChildren().add(name);
             listDisplay.getChildren().add(guiItem);
         }
-        return noBidding;
+        disconnect.setDisable(isBid);
     }
+
+    private void failed(){
+        vLog.getChildren().add(new Text("connection failed"));
+    }
+
 
     /**
      * begins shutting down the auction house and prepares for a reset.

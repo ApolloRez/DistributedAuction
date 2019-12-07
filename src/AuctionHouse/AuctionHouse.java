@@ -16,11 +16,24 @@ import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Steven Chase
  * This class holds the logic/communication of the Auction House.
  * The Auction House can communicate with the bank and an agent.
+ * Each AuctionHouse creates the following objects based on private classes:
+ * AuctionServer:This active object accepts socket requests and creates
+ * an active object AgentProxy for that socket.
+ * AuctionIn: This active object is dedicated to receiving/processing
+ * incoming messages from the bank.
+ * AgentProxy(i): These active objects are dedicated two receiving,
+ * processing, and responding to ONE agent socket.
+ * Countdown: This active object is dedicated to periodically updating
+ * time elasped since an auction item has been on sale. It also
+ * removes any item's auction has ended(30 seconds since
+ * last bid/creation.
+ * last bid/creation.
  */
 public class AuctionHouse{
     private ServerSocket server; //ServerSocket for agent communication
@@ -168,8 +181,6 @@ public class AuctionHouse{
                         e.printStackTrace();
                     }
                 }
-            }else{
-                System.out.println("Not Good");
             }
         }
 
@@ -185,9 +196,9 @@ public class AuctionHouse{
         private void released(Message message){
             Message.Response response = message.getResponse();
             if(response == Message.Response.SUCCESS){
-                System.out.println("release was successful");
+                log.add("release was successful");
             }else{
-                System.out.println("release failed");
+                log.add("release failed");
             }
         }
         private void registered(Message message){
@@ -216,7 +227,7 @@ public class AuctionHouse{
                     client.start();
                 }
             }catch (IOException e){
-                //System.out.println("Server is closed");
+                run = false;
             }
         }
     }
@@ -301,7 +312,6 @@ public class AuctionHouse{
                     }
                     activeAgents.remove(this);
                 }else{
-                    System.out.println(activeAgents.size());
                     if(!agentSocket.isClosed()){
                         agentOut.close();
                         agentIn.close();
@@ -309,9 +319,7 @@ public class AuctionHouse{
                     }
                     activeAgents.remove(this);
                 }
-            }catch (IOException e){
-                e.printStackTrace();
-                //System.out.println("error in shutdown method");
+            }catch (IOException ignored){
             }
         }
 
@@ -335,7 +343,6 @@ public class AuctionHouse{
                 case DEREGISTER:
                     agentShutdown(false);
                     break;
-                default: System.out.println(type);
             }
         }
 

@@ -14,7 +14,7 @@ public class AuctionMessage implements Serializable {
     private AMType type;   //what kind of message is it
     private ArrayList<Item> catalogue; //list of items for sale
     private Double amount;          //amount to bid
-    private UUID itemID;       //The item you want to bid on
+    private UUID itemId;       //The item you want to bid on
     private UUID accountId; //ID of client when first contacting Auction
     private String name; //name of the item
 
@@ -139,7 +139,7 @@ public class AuctionMessage implements Serializable {
         this.type = builder.type;
         this.catalogue = builder.catalogue;
         this.amount = builder.amount;
-        this.itemID = builder.itemId;
+        this.itemId = builder.itemId;
         this.accountId = builder.accountId;
         this.name = builder.name;
     }
@@ -173,7 +173,7 @@ public class AuctionMessage implements Serializable {
      * @return returns the itemID parameter
      */
     public UUID getItem(){
-        return itemID;
+        return itemId;
     }
 
     /**
@@ -199,19 +199,19 @@ public class AuctionMessage implements Serializable {
     public String toString() {
         String message = "{ ";
         if(type != null){
-            message = message + type;
+            message = message + "type: "+type;
         }
         if(catalogue != null){
-            message = message + ", "+catalogue;
+            message = message + ", catalogue: "+catalogue;
         }
         if(amount != null){
-            message = message+", "+amount;
+            message = message+", amount:"+amount;
         }
-        if(itemID != null){
-            message = message+", "+itemID;
+        if(itemId != null){
+            message = message+", itemId"+ itemId;
         }
         if(accountId != null){
-            message = message+","+accountId;
+            message = message+", accountId"+accountId;
         }
         message = message + " }";
         return message;
