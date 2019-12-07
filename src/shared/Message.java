@@ -28,16 +28,6 @@ public class Message implements Serializable {
         this.response = builder.response;
     }
 
-    public static void main(String[] args) {
-        Message message = new Builder()
-                .accountId(UUID.randomUUID())
-                .amount(.32)
-                .command(Command.HOLD)
-                .send(UUID.randomUUID());
-        System.out.println(message.getAccountId());
-        System.out.println(message.getAmount());
-    }
-
     /**
      * Get the response.
      * @return enum
