@@ -35,15 +35,6 @@ public class Connection implements Runnable {
     }
 
     /**
-     * Get the socket object.
-     *
-     * @return Socket
-     */
-    public Socket getSocket() {
-        return socket;
-    }
-
-    /**
      * Stop this running thread.
      */
     private void closeThread() {

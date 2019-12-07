@@ -8,11 +8,9 @@ import java.net.ServerSocket;
 
 
 public class BankServer implements Runnable {
-    private Integer portNumber;
-    private ServerSocket serverSocket;
+    private final ServerSocket serverSocket;
     private boolean isRunning;
-    private Bank bank;
-    private final ConnectionLoggerService connectionLoggerService;
+    private final Bank bank;
 
     /**
      * Create a Bank Server that accepts incoming client connections.
@@ -22,11 +20,11 @@ public class BankServer implements Runnable {
      * @throws IOException ServerSocket
      */
     public BankServer(Integer portNumber, Bank bank) throws IOException {
-        this.portNumber = portNumber;
         this.bank = bank;
-        serverSocket = new ServerSocket(this.portNumber);
+        serverSocket = new ServerSocket(portNumber);
         isRunning = true;
-        connectionLoggerService = ConnectionLoggerService.getInstance();
+        ConnectionLoggerService connectionLoggerService =
+                ConnectionLoggerService.getInstance();
         connectionLoggerService.add("Bank Server Started on "
                 + InetAddress.getLocalHost().getHostName());
     }

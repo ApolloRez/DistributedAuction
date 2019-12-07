@@ -10,9 +10,9 @@ import java.util.*;
  * between its clients.
  */
 public class Bank {
-    private final UUID id;
-    private Map<UUID, Account> accounts;
-    private List<NetInfo> auctionHouseNetInfo;
+    private final Map<UUID, Account> accounts; //Mutable, cannot be reassigned
+    private final List<NetInfo> auctionHouseNetInfo; //Mutable, cannot be reassigned
+    private UUID id;
 
     /**
      * Constructor that initializes the bank, creating a data structure to
