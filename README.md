@@ -25,7 +25,7 @@ Functionality
 =============
 
 
-#Auction House
+* Auction House
 1. Click on the jar file and a interface should pop up.
 2. Enter the ip address and port number of Bank.
 3. Enter port number you want for the Auction House Server.  
@@ -39,7 +39,7 @@ Functionality
 6. After shutting down, if you want you can open a new Auction House
    by pressing "connect" again.
 
-#Bank  
+* Bank  
 1. The bank jar will take one argument, the port number for the server. If no argument  
 is entered, a default port of 4444 is used.  
 2. When the program opens, clients and auction houses can connect using the IP address  
