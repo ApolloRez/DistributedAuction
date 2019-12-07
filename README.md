@@ -19,13 +19,13 @@ House's account.
 
 Prerequisites
 =============
-Java 8 JRE
+**Java 8 JRE**
 
 Functionality
 =============
 
 Auction House  
-=============  
+-------------  
 
 1. Click on the jar file and a interface should pop up.
 2. Enter the ip address and port number of Bank.
@@ -41,7 +41,7 @@ Auction House
    by pressing "connect" again.
 
 Bank  
-=====
+----
 
 1. The bank jar will take one argument, the port number for the server. If no argument  
 is entered, a default port of 4444 is used.  
