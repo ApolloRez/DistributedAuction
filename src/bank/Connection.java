@@ -174,8 +174,7 @@ public class Connection implements Runnable {
                     // UUID - sender
                     // List<NetInfo> netInfo
                     case DEREGISTER_AH: {
-                        bank.deRegisterAuctionHouse(message.getSender(),
-                                message.getNetInfo().get(0).getIp());
+                        bank.deRegisterAuctionHouse(message.getNetInfo().get(0));
                         connectionLoggerService.add("Connection dropped : "
                                 + socket.getInetAddress().getHostName());
                         this.closeThread();

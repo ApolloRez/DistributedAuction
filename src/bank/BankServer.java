@@ -23,9 +23,7 @@ public class BankServer implements Runnable {
         this.bank = bank;
         serverSocket = new ServerSocket(portNumber);
         isRunning = true;
-        ConnectionLoggerService connectionLoggerService =
-                ConnectionLoggerService.getInstance();
-        connectionLoggerService.add("Bank Server Started on "
+        ConnectionLoggerService.getInstance().add("Bank Server Started on "
                 + InetAddress.getLocalHost().getHostName());
     }
 
@@ -43,6 +41,7 @@ public class BankServer implements Runnable {
                 Connection connection = new Connection(serverSocket.accept(), this.bank);
             } catch (IOException e) {
                 e.printStackTrace();
+                ConnectionLoggerService.getInstance().add("Connection Broken");
             }
         }
     }

@@ -41,25 +41,27 @@ public class Bank {
      * @return UUID
      */
     public UUID registerAuctionHouse(NetInfo netInfo) {
+        System.out.println("Registering " + auctionHouseNetInfo);
         auctionHouseNetInfo.add(netInfo);
+        System.out.println("Registering After " + auctionHouseNetInfo);
         return createAccount();
     }
 
     /**
      * Remove the AuctionHouse from the netInfo list as well as the accounts.
      *
-     * @param accountId   UUID
-     * @param iNetAddress String
+     * @param netInfo NetInfo
      */
-    public void deRegisterAuctionHouse(UUID accountId, String iNetAddress) {
+    public void deRegisterAuctionHouse(NetInfo netInfo) {
+        System.out.println("deregistering " + auctionHouseNetInfo);
         NetInfo delete = null;
-        for (NetInfo netInfo : auctionHouseNetInfo) {
-            if (iNetAddress.equals(netInfo.getIp())) {
-                delete = netInfo;
+        for (NetInfo net : auctionHouseNetInfo) {
+            if (netInfo.getIp().equals(net.getIp()) && netInfo.getPort() == net.getPort()) {
+                delete = net;
             }
         }
         auctionHouseNetInfo.remove(delete);
-        accounts.remove(accountId);
+        System.out.println("deregistering After" + auctionHouseNetInfo);
     }
 
     /**
@@ -81,14 +83,17 @@ public class Bank {
     }
 
     public void auctionHouseConnDrop(String iNetAddress) {
-        NetInfo delete = null;
+        System.out.println("AH CONN DROP");
+        List<NetInfo> delete = new ArrayList<>();
         for (NetInfo netInfo : auctionHouseNetInfo) {
             if (iNetAddress.equals(netInfo.getIp())) {
-                delete = netInfo;
-                break;
+                delete.add(netInfo);
             }
         }
-        auctionHouseNetInfo.remove(delete);
+        for (NetInfo info : delete) {
+            auctionHouseNetInfo.remove(info);
+        }
+        System.out.println(auctionHouseNetInfo);
     }
 
     /**
@@ -97,6 +102,7 @@ public class Bank {
      * @return List<NetInfo>
      */
     public List<NetInfo> getAuctionHouseNetInfo() {
+        System.out.println("someone is getting AHNFList");
         return Collections.unmodifiableList(auctionHouseNetInfo);
     }
 
