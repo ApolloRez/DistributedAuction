@@ -61,7 +61,10 @@ Magnus Lindland - I did the bank package, and shared.Message class.
 
 Known Bugs  
 ==========
-* 
+* If the Auction House disconnected from the bank without sending a deregister message,  
+all Auction Houses that share said computers IP address will be removed from the known  
+Auction Houses of the bank. A client can no longer connect to any of there auction houses unless  
+they reregister with the bank.
 
 Authors
 =======
