@@ -14,6 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import shared.NetInfo;
 
 import java.io.IOException;
@@ -69,6 +70,9 @@ public class AgentGUI extends Application {
         Scene scene = new Scene(bPane, 800,600);
        // agent.connectToAuctionHouse(-1);
         primaryStage.setOnCloseRequest(e -> {
+            if (agent.getActiveBid() || agent.getConnectedToAH()) {
+                e.consume();
+            }
             Platform.exit();
             System.exit(0);
         });
@@ -109,6 +113,7 @@ public class AgentGUI extends Application {
         EventHandler<ActionEvent> discEvent = e-> {
             if (!agent.getActiveBid()) {
                 shutDownAH();
+                itemBox.getChildren().clear();
             }
         };
         disconnectAH.setOnAction(discEvent);
@@ -150,7 +155,6 @@ public class AgentGUI extends Application {
             try {
                 double bidInput = Double.parseDouble(bidAmount.getText());
                 int choiceInput = Integer.parseInt(itemChoice.getText());
-                System.out.println("sending bid");
                 agent.sendBidToAH(choiceInput - 1, bidInput);
 
             } catch (NumberFormatException | IOException nMF) {
@@ -226,12 +230,11 @@ public class AgentGUI extends Application {
         connect.setOnAction(connectEvent);
 
         EventHandler<ActionEvent> closeEvent = e -> {
-            if (!agent.getConnectedToAH()) {
+            System.out.println("clicked me");
+            if (!agent.getConnectedToAH() && !agent.getActiveBid()) {
                 shutDown();
             }
         };
-
-
         disconnect.setOnAction(closeEvent);
         connectToBank.getChildren().add(connect);
         connectToBank.getChildren().add(disconnect);
@@ -240,6 +243,7 @@ public class AgentGUI extends Application {
 
     private void shutDown() {
         agent.shutDownWithBank();
+        aHLBox.getChildren().clear();
     }
 
 
@@ -285,8 +289,6 @@ public class AgentGUI extends Application {
         } else {
 
         }
-
-            //communicate failure?
     };
 
     private void finish() {

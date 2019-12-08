@@ -88,13 +88,10 @@ public class Agent {
         return accountNumber.toString();
     }
 
-    public Thread getBankInThread() {
-        return bankInThread;
-    }
-
 
     public void registerBank() throws IOException {
         try {
+            activeBid = false;
             System.out.println(bankHostName);
             System.out.println(bankPortNumber);
             bankClient = new Socket(bankHostName, bankPortNumber);
@@ -236,14 +233,14 @@ public class Agent {
                             }
                             switch (message.getCommand()) {
                                 case DEPOSIT:
+                                    balance = message.getAmount();
                                 case GET_AVAILABLE: {
-                                    //System.out.println("should call print deposit");
-                                    //display.printDepositBalance();
                                     availableBalance = message.getAmount();
                                     break;
                                 }
                                 case GET_RESERVED: {
                                     reservedBalance = message.getAmount();
+                                    System.out.println("reserved Balance: "+ reservedBalance);
                                 }
 
                             }
@@ -273,7 +270,6 @@ public class Agent {
             getAuctionNetInfo(choice);
             try {
                 auctionClient = new Socket(auctionHouse, auctionPort);
-                //auctionServer = new ServerSocket(auctionServerPort); // not sure what to init this as
                 auctionOut = new ObjectOutputStream(auctionClient.getOutputStream());
                 registerAuctionHouse();
                 Thread auctionInThread = new Thread(new setAuctionIn());
@@ -307,7 +303,6 @@ public class Agent {
                     .id(accountNumber).build();
             sendToAH(message);
             connectedToAH = false;
-
         }
 
         private void getAuctionNetInfo(int choice) {
@@ -316,6 +311,7 @@ public class Agent {
         }
 
         public void sendBidToAH(int choice, double doubleBid) throws IOException {
+            getBalance();
             activeBid = true;
             attemptedBid = catalogue.get(choice);
             attemptedBidAmount = doubleBid;
@@ -327,6 +323,7 @@ public class Agent {
                     .id(accountNumber)
                     .build();
             sendToAH(bidMessage);
+
         }
 
         public void getUpdatedCatalogue() throws IOException {
@@ -375,8 +372,6 @@ public class Agent {
                     case REGISTER: {
                         catalogue = message.getCatalogue();
                         auctionID = message.getId();
-
-
                         break;
                     }
                     case UPDATE: {
@@ -385,9 +380,6 @@ public class Agent {
                         break;
                     }
                     case OUTBID: {
-                        // update which items the agent is know bidding on
-                        // if we have a bool about active bids we need to update that too
-
                         for (Item item : currentlyBidding) {
                             if (message.getItem()== item.getItemID()) {
                                 currentlyBidding.remove(item);
@@ -397,11 +389,8 @@ public class Agent {
                             activeBid = false;
                         }
                         break;
-                        //display.auctionHouseMenu();
                     }
                     case WINNER: {
-                        // need to determine how we are handling "winning an item"
-                        //not that important.
                         transferFunds(message.getAmount());
                         for (Item item : currentlyBidding) {
                             if (message.getItem()== item.getItemID()) {
@@ -414,24 +403,15 @@ public class Agent {
                         }
 
                         break;
-                        //display.wonAnItem();
-                        //display.auctionHouseMenu();
                     }
                     case REJECTION: {
-                        //print out insufficient funds or so
-                        //display.auctionHouseMenu();
                         if (currentlyBidding.isEmpty()) {
                             activeBid = false;
                         }
                         break;
                     }
-
                     case ACCEPTANCE: {
-                        //update which items the agent is now biddin on
-
                         currentlyBidding.add(attemptedBid);
-                        //display.auctionHouseMenu();
-
                         break;
 
                     }
