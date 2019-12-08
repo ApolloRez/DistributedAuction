@@ -32,7 +32,7 @@ public class BankGUI extends Application {
         Scene scene = new Scene(new View().getRoot());
         primaryStage.setTitle("Bank");
         primaryStage.setHeight(800);
-        primaryStage.setWidth(1200);
+        primaryStage.setWidth(600);
         primaryStage.setScene(scene);
         primaryStage.setOnCloseRequest(e -> {
             Platform.exit();

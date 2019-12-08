@@ -175,7 +175,7 @@ public class Connection implements Runnable {
                     // List<NetInfo> netInfo
                     case DEREGISTER_AH: {
                         bank.deRegisterAuctionHouse(message.getNetInfo().get(0));
-                        connectionLoggerService.add("Connection dropped : "
+                        connectionLoggerService.add("AuctionHouse Disconnected : "
                                 + socket.getInetAddress().getHostName());
                         this.closeThread();
                         break;
@@ -183,7 +183,7 @@ public class Connection implements Runnable {
                     // UUID - sender
                     case DEREGISTER_CLIENT: {
                         bank.deRegisterClient(message.getSender());
-                        connectionLoggerService.add("Connection dropped : "
+                        connectionLoggerService.add("Client Disconnected : "
                                 + socket.getInetAddress().getHostName());
                         this.closeThread();
                         break;
@@ -238,9 +238,21 @@ public class Connection implements Runnable {
         if (temp != Message.Command.GET_RESERVED && temp !=
                 Message.Command.GET_AVAILABLE) {
             if (connectionType == Message.Command.REGISTER_CLIENT) {
-                connectionLoggerService.add("\t\tClient : " + message.toString());
+                connectionLoggerService.add("Client - "
+                        + socket.getInetAddress().getHostAddress()
+                        + " : "
+                        + message.toString());
+
+            } else if (connectionType == Message.Command.REGISTER_AH) {
+                connectionLoggerService.add("Auction House - "
+                        + socket.getInetAddress().getHostAddress()
+                        + " : "
+                        + message.toString());
             } else {
-                connectionLoggerService.add("Auction House" + message.toString());
+                connectionLoggerService.add("Unknown - "
+                        + socket.getInetAddress().getHostAddress()
+                        + " : "
+                        + message.toString());
             }
         }
         return message;
