@@ -95,10 +95,7 @@ public class Client {
             Message.Command temp = message.getCommand();
             out.reset();
             out.writeObject(message);
-            if(temp == Message.Command.DEREGISTER_CLIENT){
-                check.put(Boolean.TRUE);
-            }
-        } catch (IOException|InterruptedException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -277,7 +274,6 @@ public class Client {
                 sendOut(register);
             }catch(IOException e){
                 activeAuctions.remove(this);
-                e.printStackTrace();
             }
         }
 
@@ -291,9 +287,7 @@ public class Client {
                 try{
                     message = (AuctionMessage) auctionIn.readObject();
                     process(message);
-                }catch(ClassNotFoundException e){
-                    e.printStackTrace();
-                }catch (IOException e){
+                }catch (IOException|ClassNotFoundException e){
                     message = null;
                 }
             }while(message != null);
@@ -529,14 +523,16 @@ public class Client {
                             .command(Message.Command.GET_RESERVED)
                             .send(agentId);
                     sendToBank(reserve);
-                    for(int i = 0; i < activeAuctions.size(); i++){
+                    int size = activeAuctions.size();
+                    for(int i = 0; i < size; i++){
                         AuctionMessage catalogue = AuctionMessage.Builder.newB()
                                 .type(AuctionMessage.AMType.UPDATE)
                                 .id(agentId)
                                 .build();
                         activeAuctions.get(i).sendOut(catalogue);
+                        size = activeAuctions.size();
                     }
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
                 }catch (InterruptedException e){
                     e.printStackTrace();
                 }
@@ -626,11 +622,6 @@ public class Client {
                     .command(Message.Command.DEREGISTER_CLIENT)
                     .send(agentId);
             sendToBank(deregister);
-            try{
-                Boolean check = this.check.take();
-            }catch(InterruptedException e){
-                e.printStackTrace();
-            }
             input.close();
             out.close();
             bankSocket.close();

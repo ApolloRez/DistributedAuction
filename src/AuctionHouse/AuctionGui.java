@@ -42,8 +42,8 @@ public class AuctionGui extends Application {
      * done: boolean to end the program
      */
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("64.106.20.215");
-    private TextField portInput = new TextField("4445");
+    private TextField ipInputField = new TextField("10.1.10.57");
+    private TextField portInput = new TextField("4444");
     private TextField serverInput = new TextField("4700");
     private ArrayList<Item> catalogue = new ArrayList<>();
     private VBox listDisplay = new VBox();
@@ -70,6 +70,9 @@ public class AuctionGui extends Application {
         stage.setOnCloseRequest(e -> {
             e.consume();
             if(!isBid){
+                if(auction != null){
+                    auction.shutdown();
+                }
                 Platform.exit();
                 System.exit(0);
             }else{
@@ -158,9 +161,6 @@ public class AuctionGui extends Application {
             vLog.getChildren().add(text);
             return;
         }
-        //if(auction != null){
-        //    auction.shutdown();
-        //}
         auction = new AuctionHouse(bankIp,bankPort,serverPort);
         Thread thread = new Thread(uiUpdater);
         thread.setDaemon(true);
@@ -270,6 +270,7 @@ public class AuctionGui extends Application {
         done = true;
         connect.setDisable(false);
         disconnect.setDisable(true);
+        auction = null;
     }
 
     /**

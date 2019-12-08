@@ -85,7 +85,6 @@ public class AuctionHouse{
             Thread inThread = new Thread(new AuctionIn());
             inThread.start();
             } catch(IOException u){
-            u.printStackTrace();
             check.add(false);
         }
     }
@@ -167,18 +166,14 @@ public class AuctionHouse{
             Message.Response response = message.getResponse();
             AgentProxy temp = agentSearch(bidder);
             if (temp != null) {
-                if (response == Message.Response.SUCCESS) {
-                    try{
+                try{
+                    if (response == Message.Response.SUCCESS) {
                         temp.bankSignOff.put(true);
-                    }catch (InterruptedException e){
-                        e.printStackTrace();
-                    }
-                }else if(response == Message.Response.INSUFFICIENT_FUNDS){
-                    try{
+                    }else if(response == Message.Response.INSUFFICIENT_FUNDS){
                         temp.bankSignOff.put(false);
-                    }catch (InterruptedException e){
-                        e.printStackTrace();
                     }
+                }catch (InterruptedException e){
+                    e.printStackTrace();
                 }
             }
         }
@@ -222,8 +217,6 @@ public class AuctionHouse{
                     Socket clientSocket = server.accept();
                     AgentProxy newAgent = new AgentProxy(clientSocket);
                     activeAgents.add(newAgent);
-                    Thread client = new Thread(newAgent);
-                    client.start();
                 }
             }catch (IOException e){
                 run = false;
@@ -258,8 +251,10 @@ public class AuctionHouse{
                 agentIn = new ObjectInputStream(agentSocket.getInputStream());
                 agentOut = new ObjectOutputStream(
                         agentSocket.getOutputStream());
+                Thread client = new Thread(this);
+                client.start();
             }catch(IOException e){
-                e.printStackTrace();
+                activeAgents.remove(this);
             }
         }
 
@@ -277,9 +272,7 @@ public class AuctionHouse{
                         log.add("From a client: " + message);
                     }
                     process(message);
-                }catch(ClassNotFoundException e){
-                    e.printStackTrace();
-                }catch (IOException e){
+                }catch (IOException|ClassNotFoundException e){
                     agentShutdown(false);
                     message = null;
                 }
@@ -648,6 +641,7 @@ public class AuctionHouse{
                     .command(Command.DEREGISTER_AH)
                     .netInfo(ahInfo).send(auctionId);
             sendToBank(deregister);
+            //out.writeObject(deregister);
             out.close();
             input.close();
             server.close();

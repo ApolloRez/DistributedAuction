@@ -1,6 +1,6 @@
 package AgentBackup;
 import AuctionHouse.Item;
-import AgentBackup.Agent.AuctionProxy;
+import AgentBackup.Client.AuctionProxy;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Button;

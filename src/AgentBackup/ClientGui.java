@@ -52,8 +52,8 @@ public class ClientGui extends Application {
      * done: boolean to shutdown any looping Threads (uiUpdater)
      */
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("64.106.20.214");
-    private TextField portInput = new TextField("4444");
+    private TextField ipInputField = new TextField("");
+    private TextField portInput = new TextField("");
     private Client agent;
     private Button disconnect = new Button("Shutdown");
     private Button connect = new Button("connect");
@@ -84,6 +84,9 @@ public class ClientGui extends Application {
         stage.setOnCloseRequest(e -> {
             e.consume();
             if(!isBid){
+                if(agent != null){
+                    agent.shutdown();
+                }
                 Platform.exit();
                 System.exit(0);
             }else{
@@ -189,6 +192,7 @@ public class ClientGui extends Application {
         done = true;
         connect.setDisable(false);
         disconnect.setDisable(true);
+        agent = null;
     }
 
     /**
