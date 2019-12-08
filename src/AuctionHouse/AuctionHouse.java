@@ -65,7 +65,8 @@ public class AuctionHouse{
         try{
             log.add("Connecting to bank");
             auctionClient = new Socket();
-            auctionClient.connect( new InetSocketAddress(address,clientPort),2000);
+            auctionClient.connect(
+                    new InetSocketAddress(address,clientPort),2000);
             server = new ServerSocket(serverPort);
             Thread serverThread = new Thread(new AuctionServer());
             serverThread.start();
@@ -289,8 +290,9 @@ public class AuctionHouse{
          *               error handling/DEREGISTER message
          */
         private void agentShutdown(Boolean reason){
+            message = null;
+            activeAgents.remove(this);
             try{
-                message = null;
                 if(reason){
                     AuctionMessage shutdown = AuctionMessage.Builder.newB()
                             .type(AuctionMessage.AMType.DEREGISTER)
@@ -302,16 +304,15 @@ public class AuctionHouse{
                         agentIn.close();
                         agentSocket.close();
                     }
-                    activeAgents.remove(this);
                 }else{
                     if(!agentSocket.isClosed()){
                         agentOut.close();
                         agentIn.close();
                         agentSocket.close();
                     }
-                    activeAgents.remove(this);
                 }
-            }catch (IOException ignored){
+            }catch (IOException e){
+                e.printStackTrace();
             }
         }
 
@@ -642,13 +643,13 @@ public class AuctionHouse{
                     .netInfo(ahInfo).send(auctionId);
             sendToBank(deregister);
             //out.writeObject(deregister);
-            out.close();
-            input.close();
-            server.close();
             while(!activeAgents.isEmpty()){
                 activeAgents.get(0).message = null;
                 activeAgents.get(0).agentShutdown(true);
             }
+            out.close();
+            input.close();
+            server.close();
         }catch(IOException e){
             e.printStackTrace();
         }

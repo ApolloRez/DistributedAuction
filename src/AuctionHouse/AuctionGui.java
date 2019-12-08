@@ -42,9 +42,9 @@ public class AuctionGui extends Application {
      * done: boolean to end the program
      */
     private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("10.1.10.57");
-    private TextField portInput = new TextField("4444");
-    private TextField serverInput = new TextField("4700");
+    private TextField ipInputField = new TextField("");
+    private TextField portInput = new TextField("");
+    private TextField serverInput = new TextField("");
     private ArrayList<Item> catalogue = new ArrayList<>();
     private VBox listDisplay = new VBox();
     private AuctionHouse auction;
@@ -66,7 +66,7 @@ public class AuctionGui extends Application {
         setupLog();
         setupLeftWindow();
         setupCatalogue();
-        Scene scene = new Scene(bPane,500,450);
+        Scene scene = new Scene(bPane,550,450);
         stage.setOnCloseRequest(e -> {
             e.consume();
             if(!isBid){
@@ -95,7 +95,7 @@ public class AuctionGui extends Application {
         topWindow.setAlignment(Pos.CENTER);
         VBox bankIP = new VBox();
         Text ipText = new Text("Bank IP");
-        bankIP.setPrefWidth(80);
+        bankIP.setPrefWidth(110);
         bankIP.getChildren().addAll(ipText,ipInputField);
         topWindow.getChildren().add(bankIP);
 
