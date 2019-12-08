@@ -27,10 +27,10 @@ Functionality
 Auction House  
 -------------  
 
-1. Click on the jar file and a interface should pop up.
+1. Click on the jar file and an interface should pop up.
 2. Enter the ip address and port number of Bank.
 3. Enter port number you want for the Auction House Server.  
-3. Press "connect" add the Auction House will connect to the Bank 
+3. Press "connect" and the Auction House will connect to the Bank 
    and create its own server.
 4. A display will pop up showing the current Items for sale, their time left,
    ID of Auction House bank account, its current bank account balance, and a 
@@ -50,12 +50,37 @@ of the computer, this address is not provided in the program.
 3. From this point, various messages are displayed to the GUI.  
 a) Connections and drops.  
 b) Message commands, ie: register, deregister, transfer_funds, deposit, etc.  
-4. Once finished, shut down the program using the window close.  
+4. Once finished, shut down the program using the window close.
+
+AgentBackup
+----
+1. Click on far file and an interface should pop up.
+2. Enter ip address and port number of Bank
+3. Press "connect" and the Agent will attempt to connect to the Bank.
+4. After connecting, the Agent will immediately desposit 200 and get a list of currently 
+   connected Auction Houses from the Bank. It will then connect to those Auction Houses.
+5. If an Auction House registers after the Agent received the list, press "refresh" 
+   so that the Agent can check again if there are any new Auction Houses.
+6. On the right side of the interface, a button(or buttons) will appear. Each button
+   represents one Auction House. The string of characters on the button is the first 
+   four characters of that Auction House's ID from the Bank.
+7. Press on any of the Auction House buttons, and a interface will pop up in the center.
+8. The interface will show the list of items currently for sale at that specific Auction
+   House. For each item there will be a TextField and button to the right of the item name.
+   Each item will have a timer until the item stops being for sale.
+9. Enter the amount you want to bid for an item in that item's TextField. Then press "bid"
+   and the Agent will bid on that item.
+10. The Auction House will send a rejection/acceptance notification that will appear in the
+    bottom portion of the interface. Note, you cannot exit the program will ANY bid is in
+    progress.
+11. The Auction House will notify you if you won the item or another Agent outbid you.
+12. Press "shutdown" or exit the program when you're finished. Note, if you want you can
+    press "connect" again to create another Agent.
 
 Contributions
 =============
-Steven Chase - I did AuctionHouse package, AuctionMessage in shared, and NetInfo
-in shared.  
+Steven Chase - I did AuctionHouse package, AuctionMessage in shared, NetInfo
+in shared, and the AgentBackup package.  
 Magnus Lindland - I did the bank package, and shared.Message class.   
 
 
