@@ -343,8 +343,8 @@ public class Client {
          * @param message message with outbid notification.
          */
         private void outbid(AuctionMessage message){
-            UUID item = message.getItem();
-            log.add("Your bid on "+ item+" was outbidded");
+            String name = message.getName();
+            log.add("Your bid on "+ name+" was outbid");
         }
 
         /**
