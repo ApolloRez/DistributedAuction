@@ -5,6 +5,7 @@ import shared.AuctionMessage;
 import shared.Message;
 import shared.NetInfo;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -41,7 +42,7 @@ public class Agent {
     private boolean connectedToAH;
     private boolean activeBid;
 
-    private double balance;
+
     private double availableBalance;
     private double reservedBalance;
     private UUID accountNumber;
@@ -55,11 +56,11 @@ public class Agent {
     private ArrayList<Item> wonItems = new ArrayList<Item>();
 
     Thread bankInThread;
+    Thread auctionInThread;
 
     public Agent(String hostName, int portNumber) {
         bankHostName = hostName;
         bankPortNumber = portNumber;
-
     }
 
 
@@ -77,6 +78,7 @@ public class Agent {
     }
 
     public double getBalance() {
+
         return availableBalance + reservedBalance;
     }
 
@@ -92,6 +94,8 @@ public class Agent {
     public void registerBank() throws IOException {
         try {
             activeBid = false;
+            availableBalance = 0;
+            reservedBalance = 0;
             System.out.println(bankHostName);
             System.out.println(bankPortNumber);
             bankClient = new Socket(bankHostName, bankPortNumber);
@@ -116,6 +120,7 @@ public class Agent {
     }
 
     public void updateBalance() {
+        System.out.println("Should be requesting updated sums");
         Message message = new Message.Builder()
                 .command(Message.Command.GET_AVAILABLE)
                 .send(accountNumber);
@@ -153,14 +158,8 @@ public class Agent {
         sendToBank(message);
     }
 
-    public void closeAgent() throws IOException {
-        Message message = new Message.Builder()
-                .command(Message.Command.DEREGISTER_CLIENT)
-                .send(accountNumber);
-        sendToBank(message);
-    }
-
     private void sendToBank(Message message) {
+        System.out.println(message.toString());
         try {
             bankOut.writeObject(message);
         } catch (IOException e) {
@@ -183,7 +182,7 @@ public class Agent {
     }
 
     public boolean getActiveBid() {
-        return true;
+        return activeBid;
     }
 
     public double getAvailableBalance() {
@@ -200,12 +199,10 @@ public class Agent {
 
         @Override
         public void run() {
-            //System.out.println("listening to bank");
             try {
                 bankIn = new ObjectInputStream(bankClient.getInputStream());
                 while(run) {
                     message = (Message) bankIn.readObject(); //?
-                    //System.out.println(message.toString());
                     processBankMessage(message);
                 }
             } catch (IOException | ClassNotFoundException e) {
@@ -216,33 +213,39 @@ public class Agent {
 // process bank message should be able to get the right info from bank
 
             private void processBankMessage(Message message) throws IOException {
+                System.out.println(message.toString());
                 if (message.getNetInfo() != null) {
                     auctionHouses = message.getNetInfo();
-             //       display.printAHList(auctionHouses);
                 }
-                if (message.getCommand()== Message.Command.REGISTER_CLIENT) {
+                /*
+                if (message.getCommand().equals(Message.Command.REGISTER_CLIENT)) {
                     accountNumber = message.getAccountId();
                     System.out.println("got it");
                 }
+                */
 
-                if (message.getResponse() != null) {
+
+
+                    if (message.getResponse() != null) {
                     switch (message.getResponse()) {
                         case SUCCESS: {
-                            if (accountNumber == null) {
-                                accountNumber = message.getAccountId();
-                            }
                             switch (message.getCommand()) {
-                                case DEPOSIT:
-                                    balance = message.getAmount();
-                                case GET_AVAILABLE: {
-                                    availableBalance = message.getAmount();
+                                case REGISTER_CLIENT: {
+                                    accountNumber = message.getAccountId();
+                                    break;
+
+                                }
+                                case DEPOSIT: {
+                                    availableBalance = availableBalance + message.getAmount();
                                     break;
                                 }
-                                case GET_RESERVED: {
-                                    reservedBalance = message.getAmount();
-                                    System.out.println("reserved Balance: "+ reservedBalance);
+                                case DEREGISTER_CLIENT: {
+                                    bankIn.close();
+                                    bankOut.close();
+                                    bankInThread.stop();
+                                    bankClient.close();
+                                    break;
                                 }
-
                             }
                             break;
                         }
@@ -261,6 +264,21 @@ public class Agent {
                             break;
                         }
                     }
+
+                }
+                    switch (message.getCommand()) {
+
+                         case GET_AVAILABLE: {
+                            availableBalance = message.getAmount();
+                            break;
+                        }
+                        case GET_RESERVED: {
+                            System.out.println("Say something Im giving up on you");
+                            reservedBalance = message.getAmount();
+                            System.out.println("reserved Balance: "+ reservedBalance);
+                            break;
+                    }
+
                 }
             }
         }
@@ -272,7 +290,7 @@ public class Agent {
                 auctionClient = new Socket(auctionHouse, auctionPort);
                 auctionOut = new ObjectOutputStream(auctionClient.getOutputStream());
                 registerAuctionHouse();
-                Thread auctionInThread = new Thread(new setAuctionIn());
+                auctionInThread = new Thread(new setAuctionIn());
                 auctionInThread.start();
                 connectedToAH = true;
                 return true;
@@ -289,20 +307,27 @@ public class Agent {
             return connectedToAH;
         }
 
-        public void registerAuctionHouse() throws IOException {
+        public void registerAuctionHouse() {
             AuctionMessage message = AuctionMessage.Builder.newB()
                     .type(AuctionMessage.AMType.REGISTER).id(accountNumber).build();
             sendToAH(message);
-            connectedToAH = true;
 
         }
-        // we need a de register with auction house
         public void deRegisterAuctionHouse() {
             AuctionMessage message = AuctionMessage.Builder.newB()
                     .type(AuctionMessage.AMType.DEREGISTER)
                     .id(accountNumber).build();
             sendToAH(message);
-            connectedToAH = false;
+            System.out.println("got a dereg from the AH");
+            try {
+                connectedToAH = false;
+                auctionIn.close();
+                auctionOut.close();
+                auctionInThread.stop();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         }
 
         private void getAuctionNetInfo(int choice) {
@@ -326,7 +351,7 @@ public class Agent {
 
         }
 
-        public void getUpdatedCatalogue() throws IOException {
+        public void getUpdatedCatalogue() {
             AuctionMessage updateMessage = new AuctionMessage.Builder().newB()
                     .type(AuctionMessage.AMType.UPDATE)
                     .id(accountNumber)
@@ -353,20 +378,20 @@ public class Agent {
                 System.out.println("listening to AH");
                 try {
                     auctionIn = new ObjectInputStream(auctionClient.getInputStream());
+                    System.out.println("Connected to AH: "+getConnectedToAH());
                     while(getConnectedToAH()) {
+                        System.out.println("is this? " +getConnectedToAH());
+
                         message = (AuctionMessage) auctionIn.readObject(); //?
                         System.out.println(message.toString());
                         processAuctionMessage(message);
                     }
-                } catch (IOException | ClassNotFoundException e) {
+                } catch (IOException | ClassNotFoundException  e) {
                     e.printStackTrace();
                 }
             }
 
             private void processAuctionMessage(AuctionMessage message) throws IOException {
-                if (message.getType() == AuctionMessage.AMType.ACCEPTANCE) {
-                    activeBid = true;
-                }
 
                 switch (message.getType()) {
                     case REGISTER: {
@@ -381,7 +406,7 @@ public class Agent {
                     }
                     case OUTBID: {
                         for (Item item : currentlyBidding) {
-                            if (message.getItem()== item.getItemID()) {
+                            if (message.getItem().equals(item.getItemID())) {
                                 currentlyBidding.remove(item);
                             }
                         }
@@ -393,13 +418,16 @@ public class Agent {
                     case WINNER: {
                         transferFunds(message.getAmount());
                         for (Item item : currentlyBidding) {
-                            if (message.getItem()== item.getItemID()) {
+                            if (message.getItem().equals(item.getItemID())) {
                                 currentlyBidding.remove(item);
                                 wonItems.add(item);
                             }
                             if (currentlyBidding.isEmpty()) {
                                 activeBid = false;
+                                break;
                             }
+                            System.out.println(currentlyBidding.size());
+                            System.out.println(activeBid);
                         }
 
                         break;
@@ -411,8 +439,11 @@ public class Agent {
                         break;
                     }
                     case ACCEPTANCE: {
-                        currentlyBidding.add(attemptedBid);
+                        currentlyBidding.add(attemptedBid); //969526df-e6b6-4fc0-a3ef-1f53206de975
                         break;
+
+                    }
+                    case DEREGISTER: {
 
                     }
                 }

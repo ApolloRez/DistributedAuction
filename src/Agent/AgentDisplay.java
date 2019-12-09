@@ -50,7 +50,7 @@ public class AgentDisplay {
                 startUp();
             }
         } else if (nextLine.equals("Quit")) {
-            agent.closeAgent();
+           // agent.closeAgent();
         } else {
             System.out.println("goofing");
             startUp();
