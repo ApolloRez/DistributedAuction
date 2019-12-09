@@ -1,11 +1,10 @@
 package Agent;
 
 import AuctionHouse.Item;
-import AuctionHouse.ItemList;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -15,9 +14,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import shared.NetInfo;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,19 +37,11 @@ public class AgentGUI extends Application {
     private HBox agentWindow = new HBox();
 
 
-    private ArrayList<String> AHNetInfoStrings = new ArrayList<>();
-    private ArrayList<String> itemStrings = new ArrayList<>();
 
     private ArrayList<Item> catalogue = new ArrayList<>();
     private List<NetInfo> auctionHouses;
 
-
-    private double bankBalance;
-    private double availableBalance;
-
     private boolean runningLists;
-    private boolean runningItemList;
-
 
     private TextField ipInputField = new TextField("ip String");
     private TextField portInput = new TextField("portNumber int");
@@ -264,6 +253,7 @@ public class AgentGUI extends Application {
     private void shutDown() {
         agent.shutDownWithBank();
         aHLBox.getChildren().clear();
+        runningLists = false;
 
     }
 

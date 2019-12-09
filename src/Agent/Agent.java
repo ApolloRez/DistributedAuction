@@ -28,7 +28,6 @@ public class Agent {
     private String auctionHouse;
     private int auctionPort;
     private UUID auctionID;
-    private double fundsToTransfer;
 
     private ObjectInputStream bankIn;
     private ObjectOutputStream bankOut;
@@ -45,13 +44,13 @@ public class Agent {
 
     private double availableBalance;
     private double reservedBalance;
+
     private UUID accountNumber;
 
     private List<NetInfo> auctionHouses;
     private ArrayList<Item> catalogue = new ArrayList<Item>();
 
     private Item attemptedBid;
-    private Double attemptedBidAmount;
     private ArrayList<Item> currentlyBidding = new ArrayList<Item>();
     private ArrayList<Item> wonItems = new ArrayList<Item>();
 
@@ -339,7 +338,6 @@ public class Agent {
             getBalance();
             activeBid = true;
             attemptedBid = catalogue.get(choice);
-            attemptedBidAmount = doubleBid;
             Double bid = doubleBid;
             AuctionMessage bidMessage = new AuctionMessage.Builder().newB()
                     .type(AuctionMessage.AMType.BID)
@@ -371,12 +369,14 @@ public class Agent {
 
         public class setAuctionIn implements Runnable {
             public AuctionMessage message;
+            private String bidStatus;
 
 
             @Override
             public void run() {
                 System.out.println("listening to AH");
                 try {
+                    bidStatus = "";
                     auctionIn = new ObjectInputStream(auctionClient.getInputStream());
                     System.out.println("Connected to AH: "+getConnectedToAH());
                     while(getConnectedToAH()) {
@@ -391,7 +391,12 @@ public class Agent {
                 }
             }
 
-            private void processAuctionMessage(AuctionMessage message) throws IOException {
+            public String getBidStatus (){
+
+                return bidStatus;
+            }
+
+            private void processAuctionMessage(AuctionMessage message) {
 
                 switch (message.getType()) {
                     case REGISTER: {
