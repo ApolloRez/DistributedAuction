@@ -225,59 +225,61 @@ public class Agent {
 
 
                     if (message.getResponse() != null) {
-                    switch (message.getResponse()) {
-                        case SUCCESS: {
-                            switch (message.getCommand()) {
-                                case REGISTER_CLIENT: {
-                                    accountNumber = message.getAccountId();
-                                    break;
+                        switch (message.getResponse()) {
+                            case SUCCESS: {
+                                switch (message.getCommand()) {
+                                    case REGISTER_CLIENT: {
+                                        accountNumber = message.getAccountId();
+                                        break;
 
+                                    }
+                                    case DEPOSIT: {
+                                        availableBalance = availableBalance + message.getAmount();
+                                        break;
+                                    }
+                                    case DEREGISTER_CLIENT: {
+                                        bankIn.close();
+                                        bankOut.close();
+                                        bankInThread.stop();
+                                        bankClient.close();
+                                        break;
+                                    }
                                 }
-                                case DEPOSIT: {
-                                    availableBalance = availableBalance + message.getAmount();
-                                    break;
-                                }
-                                case DEREGISTER_CLIENT: {
-                                    bankIn.close();
-                                    bankOut.close();
-                                    bankInThread.stop();
-                                    bankClient.close();
-                                    break;
-                                }
+                                break;
                             }
-                            break;
-                        }
-                        case ERROR: {
-                            System.out.println("Something has gone terribly wrong the " +
-                                    "bank has made a large error in your favor");
-                            break;
+                            case ERROR: {
+                                System.out.println("Something has gone terribly wrong the " +
+                                        "bank has made a large error in your favor");
+                                break;
 
+                            }
+                            case INSUFFICIENT_FUNDS: {
+                                System.out.println("Insufficient funds");
+                                break;
+                            }
+                            case INVALID_PARAMETERS: {
+                                System.out.println("Invalid Parameters, check the code or the input?");
+                                break;
+                            }
                         }
-                        case INSUFFICIENT_FUNDS: {
-                            System.out.println("Insufficient funds");
-                            break;
-                        }
-                        case INVALID_PARAMETERS: {
-                            System.out.println("Invalid Parameters, check the code or the input?");
-                            break;
+
+
+                    }
+                    if (message.getCommand() != null) {
+                        switch (message.getCommand()) {
+                            case GET_AVAILABLE: {
+                                availableBalance = message.getAmount();
+                                break;
+                            }
+                            case GET_RESERVED: {
+                                System.out.println("Say something Im giving up on you");
+                                reservedBalance = message.getAmount();
+                                System.out.println("reserved Balance: "+ reservedBalance);
+                                break;
+                            }
+
                         }
                     }
-
-                }
-                    switch (message.getCommand()) {
-
-                         case GET_AVAILABLE: {
-                            availableBalance = message.getAmount();
-                            break;
-                        }
-                        case GET_RESERVED: {
-                            System.out.println("Say something Im giving up on you");
-                            reservedBalance = message.getAmount();
-                            System.out.println("reserved Balance: "+ reservedBalance);
-                            break;
-                    }
-
-                }
             }
         }
 
@@ -410,7 +412,8 @@ public class Agent {
                         for (Item item : currentlyBidding) {
                             if (message.getItem().equals(item.getItemID())) {
                                 currentlyBidding.remove(item);
-                                bidStatus = "OUTBID on item " + item.toString();
+                                bidStatus = "OUTBID on item " + item.name();
+                                break;
                             }
                         }
                         if (currentlyBidding.isEmpty()) {
@@ -425,7 +428,7 @@ public class Agent {
                             if (message.getItem().equals(item.getItemID())) {
                                 currentlyBidding.remove(item);
                                 wonItems.add(item);
-                                bidStatus = "WINNER of item "+ item.toString();
+                                bidStatus = "WINNER of item "+ item.name();
                             }
                             if (currentlyBidding.isEmpty()) {
                                 activeBid = false;
@@ -438,30 +441,20 @@ public class Agent {
                         break;
                     }
                     case REJECTION: {
-                        bidStatus = "REJECTED bid on "+ attemptedBid.toString();
+                        bidStatus = "REJECTED bid on "+ attemptedBid.name();
                         if (currentlyBidding.isEmpty()) {
                             activeBid = false;
                         }
                         break;
                     }
                     case ACCEPTANCE: {
-                        bidStatus = "Bid accepted on " + attemptedBid.toString();
+                        bidStatus = "Bid accepted on " + attemptedBid.name();
                         currentlyBidding.add(attemptedBid);
                         break;
                     }
                     case DEREGISTER: {
-
                     }
                 }
-
-
             }
         }
-
-
-
-
-
-
     }
-

@@ -51,6 +51,8 @@ public class AgentGUI extends Application {
     private TextField bidAmount = new TextField("bid Amount");
     private TextField depositAmount = new TextField("deposit Amount");
 
+    ScrollPane logDisplay;
+
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -186,6 +188,7 @@ public class AgentGUI extends Application {
 
     private void updateBalances() {
         agentWindow.getChildren().clear();
+        agentWindow.getChildren().add(logDisplay);
         agent.updateBalance();
         double newBalance  = agent.getBalance();
         HBox bItem = new HBox();
@@ -266,7 +269,8 @@ public class AgentGUI extends Application {
     }
 
     private void bidLogSetup() {
-        ScrollPane logDisplay = new ScrollPane();
+        logDisplay = new ScrollPane();
+        logDisplay.setMaxHeight(100);
         bidLog.setSpacing(5);
         bidLog.setAlignment(Pos.CENTER_LEFT);
         bidLog.setMinWidth(200);
