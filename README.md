@@ -55,8 +55,7 @@ b) Message commands, ie: register, deregister, transfer_funds, deposit, etc.
 
 Contributions
 =============
-Steven Chase - I did AuctionHouse package, AuctionMessage in shared, NetInfo
-in shared, and the AgentBackup package.  
+Steven Chase - I did AuctionHouse package, and AuctionMessage in shared.  
 Magnus Lindland - I did the bank package, and shared.Message class.   
 
 
@@ -66,6 +65,9 @@ Known Bugs
 all Auction Houses that share said computers IP address will be removed from the known  
 Auction Houses of the bank. A client can no longer connect to any of these auction houses unless  
 they reregister with the bank.
+* The Items for sale at an Auction House will intially be in sync in terms of time left. Over 
+time, the timers for each item will go out of sync without Agent intervention
+
 
 Authors
 =======
