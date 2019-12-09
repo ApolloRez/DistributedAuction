@@ -1,10 +1,10 @@
 package Agent;
 
 import AuctionHouse.Item;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -15,7 +15,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import shared.NetInfo;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,19 +37,11 @@ public class AgentGUI extends Application {
     private HBox agentWindow = new HBox();
 
 
-    private ArrayList<String> AHNetInfoStrings = new ArrayList<>();
-    private ArrayList<String> itemStrings = new ArrayList<>();
 
     private ArrayList<Item> catalogue = new ArrayList<>();
     private List<NetInfo> auctionHouses;
 
-
-    private double bankBalance;
-    private double availableBalance;
-
     private boolean runningLists;
-    private boolean runningItemList;
-
 
     private TextField ipInputField = new TextField("ip String");
     private TextField portInput = new TextField("portNumber int");
@@ -67,10 +58,14 @@ public class AgentGUI extends Application {
         auctionHousesWindow();
         biddingWindowSetup();
         Scene scene = new Scene(bPane, 800,600);
-       // agent.connectToAuctionHouse(-1);
         primaryStage.setOnCloseRequest(e -> {
-            Platform.exit();
-            System.exit(0);
+            if (agent.getActiveBid()) {
+                System.out.println("Consume?");
+                e.consume();
+            } else {
+                Platform.exit();
+                System.exit(0);
+            }
         });
         primaryStage.setTitle("Distributed Agent");
         primaryStage.setScene(scene);
@@ -107,8 +102,11 @@ public class AgentGUI extends Application {
 
         Button disconnectAH = new Button("Shutdown");
         EventHandler<ActionEvent> discEvent = e-> {
+            System.out.println(agent.getActiveBid());
             if (!agent.getActiveBid()) {
-                shutDownAH();
+                if (agent.getConnectedToAH()) {
+                    shutDownAH();
+                }
             }
         };
         disconnectAH.setOnAction(discEvent);
@@ -121,7 +119,6 @@ public class AgentGUI extends Application {
 
         Button refreshAHList = new Button("refresh");
         EventHandler<ActionEvent> refresh = e-> {
-            agent.updateBalance();
             updateBalances();
             updateAHList();
         };
@@ -150,7 +147,6 @@ public class AgentGUI extends Application {
             try {
                 double bidInput = Double.parseDouble(bidAmount.getText());
                 int choiceInput = Integer.parseInt(itemChoice.getText());
-                System.out.println("sending bid");
                 agent.sendBidToAH(choiceInput - 1, bidInput);
 
             } catch (NumberFormatException | IOException nMF) {
@@ -191,8 +187,25 @@ public class AgentGUI extends Application {
         }
     }
 
+    private void updateBalances() {
+        agentWindow.getChildren().clear();
+        agent.updateBalance();
+        double newBalance  = agent.getBalance();
+        HBox bItem = new HBox();
+        Text newB = new Text("Balance: "+newBalance);
+        bItem.getChildren().add(newB);
+
+        double newABalance = agent.getAvailableBalance();
+        HBox abItem = new HBox();
+        Text newAB = new Text("Available: " + newABalance);
+        abItem.getChildren().add(newAB);
+
+        agentWindow.getChildren().addAll(bItem, abItem);
+    }
+
     private void shutDownAH() {
         agent.deRegisterAuctionHouse();
+        itemBox.getChildren().clear();
     }
 
 
@@ -226,12 +239,11 @@ public class AgentGUI extends Application {
         connect.setOnAction(connectEvent);
 
         EventHandler<ActionEvent> closeEvent = e -> {
-            if (!agent.getConnectedToAH()) {
+            System.out.println("clicked me");
+            if (!agent.getConnectedToAH() && !agent.getActiveBid()) {
                 shutDown();
             }
         };
-
-
         disconnect.setOnAction(closeEvent);
         connectToBank.getChildren().add(connect);
         connectToBank.getChildren().add(disconnect);
@@ -240,6 +252,9 @@ public class AgentGUI extends Application {
 
     private void shutDown() {
         agent.shutDownWithBank();
+        aHLBox.getChildren().clear();
+        runningLists = false;
+
     }
 
 
@@ -271,12 +286,10 @@ public class AgentGUI extends Application {
                 catalogue = agent.getCatalogue();
             }
             auctionHouses = agent.getAuctionHouses();
-            bankBalance = agent.getBalance();
-            availableBalance = agent.getAvailableBalance();
             while(runningLists){
                 Platform.runLater(updater);
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(750);
                 } catch (InterruptedException e){
                     e.printStackTrace();
                 }
@@ -285,8 +298,6 @@ public class AgentGUI extends Application {
         } else {
 
         }
-
-            //communicate failure?
     };
 
     private void finish() {
@@ -294,30 +305,18 @@ public class AgentGUI extends Application {
         itemBox.getChildren().clear();
     }
 
+
+
     private void update() {
         itemBox.getChildren().clear();
-        agentWindow.getChildren().clear();
         catalogue = agent.getCatalogue();
         auctionHouses = agent.getAuctionHouses();
-        bankBalance = agent.getBalance();
-        availableBalance = agent.getAvailableBalance();
-        updateItemList();
-        updateBalances();
+        if (agent.getConnectedToAH()) {
+            updateItemList();
+        }
     }
 
-    private void updateBalances() {
-        double newBalance  = agent.getBalance();
-        HBox bItem = new HBox();
-        Text newB = new Text("Balance: "+newBalance);
-        bItem.getChildren().add(newB);
 
-        double newABalance = agent.getAvailableBalance();
-        HBox abItem = new HBox();
-        Text newAB = new Text("Available: " + newABalance);
-        abItem.getChildren().add(newAB);
-
-        agentWindow.getChildren().addAll(bItem, abItem);
-    }
 
     private void updateItemList() {
         int i = 0;
@@ -335,11 +334,7 @@ public class AgentGUI extends Application {
             itemBox.getChildren().add(guiItem);
         }
         if (agent.getConnectedToAH()) {
-            try {
-                agent.getUpdatedCatalogue();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            agent.getUpdatedCatalogue();
         }
 
     }
