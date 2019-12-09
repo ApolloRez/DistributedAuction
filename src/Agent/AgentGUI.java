@@ -35,8 +35,9 @@ public class AgentGUI extends Application {
     private VBox aHLBox = new VBox();
     private VBox itemBox = new VBox();
     private HBox agentWindow = new HBox();
+    private VBox bidLog = new VBox();
 
-
+    private String lastBidLog;
 
     private ArrayList<Item> catalogue = new ArrayList<>();
     private List<NetInfo> auctionHouses;
@@ -59,9 +60,10 @@ public class AgentGUI extends Application {
         biddingWindowSetup();
         Scene scene = new Scene(bPane, 800,600);
         primaryStage.setOnCloseRequest(e -> {
-            if (agent.getActiveBid()) {
-                System.out.println("Consume?");
-                e.consume();
+            if (agent != null) {
+                if (agent.getActiveBid()) {
+                    e.consume();
+                }
             } else {
                 Platform.exit();
                 System.exit(0);
@@ -87,7 +89,6 @@ public class AgentGUI extends Application {
         aHLBox.setMaxWidth(50);
         display.setContent(aHLBox);
         bPane.setLeft(display);
-
 
         Button connectAH = new Button("Connect");
         EventHandler<ActionEvent> connect = e-> {
@@ -179,11 +180,7 @@ public class AgentGUI extends Application {
                 guiItem.getChildren().add(info);
                 aHLBox.getChildren().add(guiItem);
             }
-            try {
-                agent.requestAHList();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            agent.requestAHList();
         }
     }
 
@@ -261,22 +258,32 @@ public class AgentGUI extends Application {
     private void agentWindowSetup() {
         agentWindow.setMinHeight(100);
         agentWindow.setAlignment(Pos.CENTER);
+        bidLogSetup();
         agentWindow.getChildren().add(balance);
         agentWindow.getChildren().add(available);
+        agentWindow.setSpacing(20);
         bPane.setTop(agentWindow);
     }
 
-
+    private void bidLogSetup() {
+        ScrollPane logDisplay = new ScrollPane();
+        bidLog.setSpacing(5);
+        bidLog.setAlignment(Pos.CENTER_LEFT);
+        bidLog.setMinWidth(200);
+        logDisplay.setContent(bidLog);
+        logDisplay.setMinSize(500,100);
+        agentWindow.getChildren().add(logDisplay);
+    }
 
     private void createAgent() throws IOException {
         agent = new Agent(bankIPString, bankPortNumber);
         agent.registerBank();
         agent.requestAHList();
         runningLists = true;
+        lastBidLog = "";
         Thread thread = new Thread(listUpdater);
         thread.setDaemon(true);
         thread.start();
-
     }
 
     private Runnable listUpdater = () -> {
@@ -305,18 +312,15 @@ public class AgentGUI extends Application {
         itemBox.getChildren().clear();
     }
 
-
-
     private void update() {
         itemBox.getChildren().clear();
         catalogue = agent.getCatalogue();
         auctionHouses = agent.getAuctionHouses();
         if (agent.getConnectedToAH()) {
             updateItemList();
+            updateBidLog();
         }
     }
-
-
 
     private void updateItemList() {
         int i = 0;
@@ -336,6 +340,16 @@ public class AgentGUI extends Application {
         if (agent.getConnectedToAH()) {
             agent.getUpdatedCatalogue();
         }
+    }
+
+    private void updateBidLog() {
+        if (agent.getBidStatus() != lastBidLog) {
+            VBox guiItem = new VBox();
+            guiItem.getChildren().add(new Text(agent.getBidStatus()));
+            bidLog.getChildren().add(guiItem);
+            lastBidLog = agent.getBidStatus();
+        }
+
 
     }
 

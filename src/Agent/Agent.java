@@ -34,12 +34,13 @@ public class Agent {
     public ObjectInputStream auctionIn;
     private ObjectOutputStream auctionOut;
 
-    public AgentDisplay display;
 
     public boolean run;
     public boolean connectedToBank;
     private boolean connectedToAH;
-    private boolean activeBid;
+    private boolean activeBid = false;
+
+    private String bidStatus;
 
 
     private double availableBalance;
@@ -64,10 +65,6 @@ public class Agent {
 
 
 
-    public void setDisplay(AgentDisplay display) {
-        this.display = display;
-    }
-
     public ArrayList<Item> getCatalogue() {
         return catalogue;
     }
@@ -81,6 +78,10 @@ public class Agent {
         return availableBalance + reservedBalance;
     }
 
+    public String getBidStatus() {
+        return bidStatus;
+    }
+
     public List<NetInfo> getAuctionHouses() {
         return auctionHouses;
     }
@@ -90,9 +91,8 @@ public class Agent {
     }
 
 
-    public void registerBank() throws IOException {
+    public void registerBank() {
         try {
-            activeBid = false;
             availableBalance = 0;
             reservedBalance = 0;
             System.out.println(bankHostName);
@@ -142,7 +142,7 @@ public class Agent {
 
     }
 
-    public void requestAHList() throws IOException {
+    public void requestAHList() {
         Message message = new Message.Builder()
                 .command(Message.Command.GET_NET_INFO)
                 .send(accountNumber);
@@ -209,7 +209,6 @@ public class Agent {
             }
         }
 
-// process bank message should be able to get the right info from bank
 
             private void processBankMessage(Message message) throws IOException {
                 System.out.println(message.toString());
@@ -369,7 +368,6 @@ public class Agent {
 
         public class setAuctionIn implements Runnable {
             public AuctionMessage message;
-            private String bidStatus;
 
 
             @Override
@@ -392,7 +390,6 @@ public class Agent {
             }
 
             public String getBidStatus (){
-
                 return bidStatus;
             }
 
@@ -413,11 +410,13 @@ public class Agent {
                         for (Item item : currentlyBidding) {
                             if (message.getItem().equals(item.getItemID())) {
                                 currentlyBidding.remove(item);
+                                bidStatus = "OUTBID on item " + item.toString();
                             }
                         }
                         if (currentlyBidding.isEmpty()) {
                             activeBid = false;
                         }
+
                         break;
                     }
                     case WINNER: {
@@ -426,6 +425,7 @@ public class Agent {
                             if (message.getItem().equals(item.getItemID())) {
                                 currentlyBidding.remove(item);
                                 wonItems.add(item);
+                                bidStatus = "WINNER of item "+ item.toString();
                             }
                             if (currentlyBidding.isEmpty()) {
                                 activeBid = false;
@@ -438,15 +438,16 @@ public class Agent {
                         break;
                     }
                     case REJECTION: {
+                        bidStatus = "REJECTED bid on "+ attemptedBid.toString();
                         if (currentlyBidding.isEmpty()) {
                             activeBid = false;
                         }
                         break;
                     }
                     case ACCEPTANCE: {
-                        currentlyBidding.add(attemptedBid); //969526df-e6b6-4fc0-a3ef-1f53206de975
+                        bidStatus = "Bid accepted on " + attemptedBid.toString();
+                        currentlyBidding.add(attemptedBid);
                         break;
-
                     }
                     case DEREGISTER: {
 
