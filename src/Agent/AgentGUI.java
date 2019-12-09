@@ -1,7 +1,12 @@
+/**
+ * @author Aidan O'Hara, Magnus Lindland, Steven Chase
+ * Dec-19
+ * Distributed Agent
+ */
+
 package Agent;
 
 import AuctionHouse.Item;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -20,6 +25,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AgentGUI extends Application {
+    /**
+     * bPane
+     * agent
+     * bankIPString
+     * bankPortNumber
+     * connect
+     * bankIPString
+     * bankPortNumber
+     * connect
+     * disconnect
+     * balance
+     * available
+     * aHLBox
+     *
+     */
     BorderPane bPane = new BorderPane();
 
     private Agent agent;
@@ -134,7 +154,7 @@ public class AgentGUI extends Application {
             try {
                 double depositIn = Double.parseDouble(depositAmount.getText());
                 agent.bankDeposit(depositIn);
-            } catch (IOException | NumberFormatException ex2) {
+            } catch (NumberFormatException ex2) {
                 ex2.printStackTrace();
             }
 
@@ -142,8 +162,6 @@ public class AgentGUI extends Application {
         deposit.setOnAction(event);
         Text depositInfo = new Text("Deposit Amount");
         aHLChoice.getChildren().addAll(depositInfo,depositAmount,deposit);
-
-        //bid read in and bid button as well as item choice read in;
         Text bidInfo = new Text("Bid:");
         Button bidButton = new Button("send Bid");
         EventHandler<ActionEvent> bid = e -> {

@@ -4,14 +4,10 @@ import AuctionHouse.Item;
 import shared.AuctionMessage;
 import shared.Message;
 import shared.NetInfo;
-
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,12 +27,12 @@ public class Agent {
 
     private ObjectInputStream bankIn;
     private ObjectOutputStream bankOut;
-    public ObjectInputStream auctionIn;
+    private ObjectInputStream auctionIn;
     private ObjectOutputStream auctionOut;
 
 
-    public boolean run;
-    public boolean connectedToBank;
+    private boolean run;
+    private boolean connectedToBank;
     private boolean connectedToAH;
     private boolean activeBid = false;
 
@@ -52,7 +48,7 @@ public class Agent {
     private ArrayList<Item> catalogue = new ArrayList<Item>();
 
     private Item attemptedBid;
-    private ArrayList<Item> currentlyBidding = new ArrayList<Item>();
+    private ArrayList<AuctionHouse.Item> currentlyBidding = new ArrayList<Item>();
     private ArrayList<Item> wonItems = new ArrayList<Item>();
 
     Thread bankInThread;
@@ -69,10 +65,6 @@ public class Agent {
         return catalogue;
     }
 
-    public UUID getAccountNumber() {
-        return accountNumber;
-    }
-
     public double getBalance() {
 
         return availableBalance + reservedBalance;
@@ -84,10 +76,6 @@ public class Agent {
 
     public List<NetInfo> getAuctionHouses() {
         return auctionHouses;
-    }
-
-    public String idToString() {
-        return accountNumber.toString();
     }
 
 
@@ -112,7 +100,6 @@ public class Agent {
 
 
         run = true;
-        //need to give some attention to this
 
         bankInThread = new Thread(new setBankIn());
         bankInThread.start();
@@ -131,7 +118,7 @@ public class Agent {
     }
 
 
-    public void bankDeposit(double deposit) throws IOException {
+    public void bankDeposit(double deposit) {
         System.out.println("Sending Deposit");
         Message message = new Message.Builder()
                 .command(Message.Command.DEPOSIT)
@@ -176,10 +163,6 @@ public class Agent {
 
     }
 
-    public ArrayList<Item> getWonItems() {
-        return wonItems;
-    }
-
     public boolean getActiveBid() {
         return activeBid;
     }
@@ -192,16 +175,14 @@ public class Agent {
         return connectedToBank;
     }
 
-
     public class setBankIn implements Runnable {
-        public Message message;
 
         @Override
         public void run() {
             try {
                 bankIn = new ObjectInputStream(bankClient.getInputStream());
                 while(run) {
-                    message = (Message) bankIn.readObject(); //?
+                    Message message = (Message) bankIn.readObject();
                     processBankMessage(message);
                 }
             } catch (IOException | ClassNotFoundException e) {
@@ -215,71 +196,55 @@ public class Agent {
                 if (message.getNetInfo() != null) {
                     auctionHouses = message.getNetInfo();
                 }
-                /*
-                if (message.getCommand().equals(Message.Command.REGISTER_CLIENT)) {
-                    accountNumber = message.getAccountId();
-                    System.out.println("got it");
-                }
-                */
 
+                if (message.getResponse() != null) {
+                    switch (message.getResponse()) {
+                        case SUCCESS: {
+                            switch (message.getCommand()) {
+                                case REGISTER_CLIENT: {
+                                    accountNumber = message.getAccountId();
+                                    break;
 
-
-                    if (message.getResponse() != null) {
-                        switch (message.getResponse()) {
-                            case SUCCESS: {
-                                switch (message.getCommand()) {
-                                    case REGISTER_CLIENT: {
-                                        accountNumber = message.getAccountId();
-                                        break;
-
-                                    }
-                                    case DEPOSIT: {
-                                        availableBalance = availableBalance + message.getAmount();
-                                        break;
-                                    }
-                                    case DEREGISTER_CLIENT: {
-                                        bankIn.close();
-                                        bankOut.close();
-                                        bankInThread.stop();
-                                        bankClient.close();
-                                        break;
-                                    }
                                 }
-                                break;
+                                case DEPOSIT: {
+                                    availableBalance = availableBalance + message.getAmount();
+                                    break;
+                                }
+                                case DEREGISTER_CLIENT: {
+                                    bankIn.close();
+                                    bankOut.close();
+                                    bankInThread.stop();
+                                    bankClient.close();
+                                    break;
+                                }
                             }
-                            case ERROR: {
-                                System.out.println("Something has gone terribly wrong the " +
-                                        "bank has made a large error in your favor");
-                                break;
-
-                            }
-                            case INSUFFICIENT_FUNDS: {
-                                System.out.println("Insufficient funds");
-                                break;
-                            }
-                            case INVALID_PARAMETERS: {
-                                System.out.println("Invalid Parameters, check the code or the input?");
-                                break;
-                            }
+                            break;
                         }
-
-
-                    }
-                    if (message.getCommand() != null) {
-                        switch (message.getCommand()) {
-                            case GET_AVAILABLE: {
-                                availableBalance = message.getAmount();
-                                break;
-                            }
-                            case GET_RESERVED: {
-                                System.out.println("Say something Im giving up on you");
-                                reservedBalance = message.getAmount();
-                                System.out.println("reserved Balance: "+ reservedBalance);
-                                break;
-                            }
-
+                        case ERROR: {
+                            System.out.println("Something has gone terribly wrong the " +
+                                    "bank has made a large error in your favor");
+                            break;
+                        }
+                        case INSUFFICIENT_FUNDS:
+                        case INVALID_PARAMETERS: {
+                            break;
                         }
                     }
+                }
+
+                if (message.getCommand() != null) {
+                    switch (message.getCommand()) {
+                        case GET_AVAILABLE: {
+                            availableBalance = message.getAmount();
+                            break;
+                        }
+                        case GET_RESERVED: {
+                            reservedBalance = message.getAmount();
+                            break;
+                        }
+
+                    }
+                }
             }
         }
 
@@ -294,9 +259,6 @@ public class Agent {
                 auctionInThread.start();
                 connectedToAH = true;
                 return true;
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-                return false;
             } catch (IOException e) {
                 e.printStackTrace();
                 return false;
@@ -318,7 +280,6 @@ public class Agent {
                     .type(AuctionMessage.AMType.DEREGISTER)
                     .id(accountNumber).build();
             sendToAH(message);
-            System.out.println("got a dereg from the AH");
             try {
                 connectedToAH = false;
                 auctionIn.close();
