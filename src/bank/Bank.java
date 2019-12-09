@@ -41,9 +41,7 @@ public class Bank {
      * @return UUID
      */
     public UUID registerAuctionHouse(NetInfo netInfo) {
-        System.out.println("Registering " + auctionHouseNetInfo);
         auctionHouseNetInfo.add(netInfo);
-        System.out.println("Registering After " + auctionHouseNetInfo);
         return createAccount();
     }
 
@@ -53,7 +51,6 @@ public class Bank {
      * @param netInfo NetInfo
      */
     public void deRegisterAuctionHouse(NetInfo netInfo) {
-        System.out.println("deregistering " + auctionHouseNetInfo);
         NetInfo delete = null;
         for (NetInfo net : auctionHouseNetInfo) {
             if (netInfo.getIp().equals(net.getIp()) && netInfo.getPort() == net.getPort()) {
@@ -61,7 +58,6 @@ public class Bank {
             }
         }
         auctionHouseNetInfo.remove(delete);
-        System.out.println("deregistering After" + auctionHouseNetInfo);
     }
 
     /**
@@ -83,7 +79,6 @@ public class Bank {
     }
 
     public void auctionHouseConnDrop(String iNetAddress) {
-        System.out.println("AH CONN DROP");
         List<NetInfo> delete = new ArrayList<>();
         for (NetInfo netInfo : auctionHouseNetInfo) {
             if (iNetAddress.equals(netInfo.getIp())) {
@@ -93,7 +88,6 @@ public class Bank {
         for (NetInfo info : delete) {
             auctionHouseNetInfo.remove(info);
         }
-        System.out.println(auctionHouseNetInfo);
     }
 
     /**
@@ -102,7 +96,6 @@ public class Bank {
      * @return List<NetInfo>
      */
     public List<NetInfo> getAuctionHouseNetInfo() {
-        System.out.println("someone is getting AHNFList");
         return Collections.unmodifiableList(auctionHouseNetInfo);
     }
 

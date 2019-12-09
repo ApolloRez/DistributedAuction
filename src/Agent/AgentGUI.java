@@ -58,10 +58,8 @@ public class AgentGUI extends Application {
 
     private Button connect = new Button("connect");
     private Button disconnect = new Button("Shutdown");
-
     private Text balance = new Text("balance: ");
     private Text available = new Text("available: ");
-
     private VBox aHLBox = new VBox();
     private VBox itemBox = new VBox();
     private HBox agentWindow = new HBox();
