@@ -26,19 +26,29 @@ import java.util.List;
 
 public class AgentGUI extends Application {
     /**
-     * bPane
-     * agent
-     * bankIPString
-     * bankPortNumber
-     * connect
-     * bankIPString
-     * bankPortNumber
-     * connect
-     * disconnect
-     * balance
-     * available
-     * aHLBox
-     *
+     * bPane - the general border Pane
+     * agent - the agent object
+     * bankIPString - the bank's ip string
+     * bankPortNumber - the bank's port number (4444)
+     * connect - connect button to connect to the bank
+     * disconnect - shutdown button for the bank
+     * balance - text so the user can see their full balance
+     * available - text so the user can see their available balance
+     * aHLBox - vBox for displaying the auctionHouses
+     * itemBox - vBox for displaying the items up for bid
+     * agentWindow - hBox for storing the bidLog and the balances
+     * bidLog - displays the agent's bidding status
+     * lastBidLog - use this string to make sure the bid log doesn't spam the display
+     * catalogue - locally stored catalogue of items from the auction house
+     * auctionHouses - locally stored list of auctionHouses netInfo
+     * runningLists - a bool to control the updater
+     * ipInputField - user input's ip string
+     * portInput - user input's port number
+     * aHLInput - the user's auction house choice
+     * itemChoice - the user's choice for item to bid on
+     * bidAmount - user input for bid amount
+     * depositAmount - user input for the deposit amount
+     * logDisplay - ScrollPane for bidLog
      */
     BorderPane bPane = new BorderPane();
 
@@ -71,11 +81,15 @@ public class AgentGUI extends Application {
     private TextField bidAmount = new TextField("bid Amount");
     private TextField depositAmount = new TextField("deposit Amount");
 
-    ScrollPane logDisplay;
+    private ScrollPane logDisplay;
 
 
+    /**
+     * starts the program
+     * @param primaryStage
+     */
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) {
         agentWindowSetup();
         connectToBankWindow();
         auctionHousesWindow();
@@ -96,6 +110,9 @@ public class AgentGUI extends Application {
         primaryStage.show();
     }
 
+    /**
+     * sets up the center to display items from the auction house
+     */
     private void biddingWindowSetup() {
         ScrollPane itemDisplay = new ScrollPane();
         itemBox.setSpacing(5);
@@ -104,6 +121,12 @@ public class AgentGUI extends Application {
         bPane.setCenter(itemDisplay);
     }
 
+    /**
+     * creates the space to display the auction houses net info as well as
+     *     buttons and text-fields allowing the user to connect/disconnect
+     *     from the auction house as well as bid, and deposit funds to the
+     *     bank.
+     */
     private void auctionHousesWindow() {
         ScrollPane display = new ScrollPane();
         display.setMinSize(150,100);
@@ -115,17 +138,12 @@ public class AgentGUI extends Application {
         Button connectAH = new Button("Connect");
         EventHandler<ActionEvent> connect = e-> {
             int choice = Integer.parseInt(aHLInput.getText());
-            try {
-                agent.connectToAuctionHouse(choice - 1);
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
+            agent.connectToAuctionHouse(choice - 1);
         };
         connectAH.setOnAction(connect);
 
         Button disconnectAH = new Button("Shutdown");
         EventHandler<ActionEvent> discEvent = e-> {
-            System.out.println(agent.getActiveBid());
             if (!agent.getActiveBid()) {
                 if (agent.getConnectedToAH()) {
                     shutDownAH();
@@ -146,6 +164,7 @@ public class AgentGUI extends Application {
             updateAHList();
         };
         refreshAHList.setOnAction(refresh);
+
         aHLChoice.getChildren().addAll(choiceLabel,aHLInput,connectAH,
                 refreshAHList, disconnectAH);
 
@@ -157,24 +176,25 @@ public class AgentGUI extends Application {
             } catch (NumberFormatException ex2) {
                 ex2.printStackTrace();
             }
-
         };
         deposit.setOnAction(event);
+
         Text depositInfo = new Text("Deposit Amount");
         aHLChoice.getChildren().addAll(depositInfo,depositAmount,deposit);
         Text bidInfo = new Text("Bid:");
         Button bidButton = new Button("send Bid");
+
         EventHandler<ActionEvent> bid = e -> {
             try {
                 double bidInput = Double.parseDouble(bidAmount.getText());
                 int choiceInput = Integer.parseInt(itemChoice.getText());
                 agent.sendBidToAH(choiceInput - 1, bidInput);
-
             } catch (NumberFormatException | IOException nMF) {
-
+                nMF.printStackTrace();
             }
         };
         bidButton.setOnAction(bid);
+
         Text bidAmountLabel = new Text("Bid Amount:");
         Text itemChoiceLabel = new Text("Item Choice: ");
         bidButton.setOnAction(bid);
@@ -185,10 +205,12 @@ public class AgentGUI extends Application {
                 bidAmount,
                 bidButton);
         bPane.setRight(aHLChoice);
-
-
     }
 
+    /**
+     * this updates the AHList with new information as well as gets
+     *     new info from the bank.
+     */
     private void updateAHList() {
         aHLBox.getChildren().clear();
         if (auctionHouses != null) {
@@ -204,6 +226,9 @@ public class AgentGUI extends Application {
         }
     }
 
+    /**
+     * this updates the agent's balances, full and available.
+     */
     private void updateBalances() {
         agentWindow.getChildren().clear();
         agentWindow.getChildren().add(logDisplay);
@@ -221,12 +246,19 @@ public class AgentGUI extends Application {
         agentWindow.getChildren().addAll(bItem, abItem);
     }
 
+    /**
+     * de-registers from the current auction house and clears the item list.
+     */
     private void shutDownAH() {
         agent.deRegisterAuctionHouse();
         itemBox.getChildren().clear();
     }
 
 
+    /**
+     * instantiates the bottom section of the display, 2 text fields
+     *     and 2 buttons.
+     */
     private void connectToBankWindow() {
         HBox connectToBank = new HBox();
         connectToBank.setMinHeight(100);
@@ -244,20 +276,14 @@ public class AgentGUI extends Application {
         connectToBank.getChildren().add(bankPort);
 
         EventHandler<ActionEvent> connectEvent = e -> {
-            try {
-                bankIPString = ipInputField.getText();
-                System.out.println(bankIPString);
-                String portString = portInput.getText();
-                bankPortNumber = Integer.parseInt(portString);
-                createAgent();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
+            bankIPString = ipInputField.getText();
+            String portString = portInput.getText();
+            bankPortNumber = Integer.parseInt(portString);
+            createAgent();
         };
         connect.setOnAction(connectEvent);
 
         EventHandler<ActionEvent> closeEvent = e -> {
-            System.out.println("clicked me");
             if (!agent.getConnectedToAH() && !agent.getActiveBid()) {
                 shutDown();
             }
@@ -268,6 +294,10 @@ public class AgentGUI extends Application {
         bPane.setBottom(connectToBank);
     }
 
+    /**
+     * has agent shut down with the bank, clears the AH List and sets the list
+     *     running boolean to false.
+     */
     private void shutDown() {
         agent.shutDownWithBank();
         aHLBox.getChildren().clear();
@@ -275,7 +305,9 @@ public class AgentGUI extends Application {
 
     }
 
-
+    /**
+     * sets up the top section with display labels.
+     */
     private void agentWindowSetup() {
         agentWindow.setMinHeight(100);
         agentWindow.setAlignment(Pos.CENTER);
@@ -286,6 +318,9 @@ public class AgentGUI extends Application {
         bPane.setTop(agentWindow);
     }
 
+    /**
+     * sets up the scrollPane for the log and adds it to the agentWindow
+     */
     private void bidLogSetup() {
         logDisplay = new ScrollPane();
         logDisplay.setMaxHeight(100);
@@ -297,7 +332,10 @@ public class AgentGUI extends Application {
         agentWindow.getChildren().add(logDisplay);
     }
 
-    private void createAgent() throws IOException {
+    /**
+     * creates the agent object, requests netInfo and starts the updater thread.
+     */
+    private void createAgent() {
         agent = new Agent(bankIPString, bankPortNumber);
         agent.registerBank();
         agent.requestAHList();
@@ -308,6 +346,9 @@ public class AgentGUI extends Application {
         thread.start();
     }
 
+    /**
+     * keeps the gui up to date. namely the list of items and the log.
+     */
     private Runnable listUpdater = () -> {
         Runnable updater = this::update;
         if (agent.getConnectedToBank()) {
@@ -325,15 +366,22 @@ public class AgentGUI extends Application {
             }
             Platform.runLater(this::finish);
         } else {
-
+            shutDownAH();
+            shutDown();
         }
     };
 
+    /**
+     * clears the windows
+     */
     private void finish() {
         aHLBox.getChildren().clear();
         itemBox.getChildren().clear();
     }
 
+    /**
+     * calls the actual update methods for the list and log
+     */
     private void update() {
         itemBox.getChildren().clear();
         catalogue = agent.getCatalogue();
@@ -344,6 +392,9 @@ public class AgentGUI extends Application {
         }
     }
 
+    /**
+     * re-draws the items, with time, name, and current bid
+     */
     private void updateItemList() {
         int i = 0;
         for (Item item : catalogue) {
@@ -364,6 +415,9 @@ public class AgentGUI extends Application {
         }
     }
 
+    /**
+     * checks if the bidStatus is new, if it is it adds it to the log.
+     */
     private void updateBidLog() {
         if (agent.getBidStatus() != lastBidLog) {
             VBox guiItem = new VBox();
@@ -376,7 +430,10 @@ public class AgentGUI extends Application {
     }
 
 
-
+    /**
+     * MAIN
+     * @param args
+     */
     public static void main(String[] args) {
         launch(args);
     }
