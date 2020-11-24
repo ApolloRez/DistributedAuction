@@ -1,6 +1,6 @@
 package shared;
 
-import AuctionHouse.Item;
+import auctionhouse.Item;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -11,18 +11,18 @@ import java.util.UUID;
  * messaging system between an agent and an Auction House
  */
 public class AuctionMessage implements Serializable {
-    private AMType type;   //what kind of message is it
-    private ArrayList<Item> catalogue; //list of items for sale
-    private Double amount;          //amount to bid
-    private UUID itemId;       //The item you want to bid on
-    private UUID accountId; //ID of client when first contacting Auction
-    private String name; //name of the item
+    private final AMType type;   //what kind of message is it
+    private final ArrayList<Item> catalogue; //list of items for sale
+    private final Double amount;          //amount to bid
+    private final UUID itemId;       //The item you want to bid on
+    private final UUID accountId; //ID of client when first contacting Auction
+    private final String name; //name of the item
 
     /**
      * Enums to let the Agent/Auction House know the topic when
      * sending/receiving messages.
      */
-    public enum AMType{
+    public enum AMType {
         BID,        //client wants to bid on item
         REGISTER,    //client first contacts Auction house/ Auction responds
         ACCEPTANCE, //Auction lets agent know their bid was accepted

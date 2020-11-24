@@ -1,4 +1,4 @@
-package AuctionHouse;
+package auctionhouse;
 
 import java.io.BufferedReader;
 import java.io.InputStream;

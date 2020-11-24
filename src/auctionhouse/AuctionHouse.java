@@ -1,4 +1,4 @@
-package AuctionHouse;
+package auctionhouse;
 
 import shared.AuctionMessage;
 import shared.AuctionMessage.AMType;
@@ -13,7 +13,6 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Steven Chase
@@ -38,13 +37,13 @@ public class AuctionHouse{
     private ObjectInputStream input;//stream to receive messages to Auction
     private ObjectOutputStream out; //output stream to send messages
     private ItemList list; //List of possible item names
-    private ArrayList<Item> catalogue = new ArrayList<>();
+    private final ArrayList<Item> catalogue = new ArrayList<>();
     //list of items currently for sale
-    private List<AgentProxy> activeAgents = new LinkedList<>();
+    private final List<AgentProxy> activeAgents = new LinkedList<>();
     //List of currently connected agents.
-    private BlockingQueue<Boolean> check = new LinkedBlockingDeque<>();
+    private final BlockingQueue<Boolean> check = new LinkedBlockingDeque<>();
     //Blocking queue used for AuctionGui communication
-    private ArrayList<String> log; //log of activities/notifications
+    private final ArrayList<String> log; //log of activities/notifications
     private double balance = 0.0; // the bank balance of the AuctionHouse
     private boolean run = true; //boolean to keep certain threads looping
     private UUID auctionId; //The id given to the AuctionHouse by the bank
@@ -231,12 +230,12 @@ public class AuctionHouse{
      * Each instance of this class represents communication with one agent.
      */
     private class AgentProxy implements Runnable {
-        private Socket agentSocket; //the socket connected to an agent
+        private final Socket agentSocket; //the socket connected to an agent
         private ObjectInputStream agentIn; //Input stream for agentSocket
         private ObjectOutputStream agentOut;//output stream for agentSocket
         private UUID agentId; //The UUID of the agent when it registers
         private AuctionMessage message = null; //The message read from agentIn
-        private BlockingQueue<Boolean> bankSignOff;
+        private final BlockingQueue<Boolean> bankSignOff;
         //Blocking queue for waiting on a HOLD response from the bank
 
         /**

@@ -4,22 +4,25 @@
  * Distributed Agent
  */
 
-package Agent;
+package agent;
 
-import AuctionHouse.Item;
+import auctionhouse.Item;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import shared.NetInfo;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,14 +59,14 @@ public class AgentGUI extends Application {
     private String bankIPString;
     private int bankPortNumber;
 
-    private Button connect = new Button("connect");
-    private Button disconnect = new Button("Shutdown");
-    private Text balance = new Text("balance: ");
-    private Text available = new Text("available: ");
-    private VBox aHLBox = new VBox();
-    private VBox itemBox = new VBox();
-    private HBox agentWindow = new HBox();
-    private VBox bidLog = new VBox();
+    private final Button connect = new Button("connect");
+    private final Button disconnect = new Button("Shutdown");
+    private final Text balance = new Text("balance: ");
+    private final Text available = new Text("available: ");
+    private final VBox aHLBox = new VBox();
+    private final VBox itemBox = new VBox();
+    private final HBox agentWindow = new HBox();
+    private final VBox bidLog = new VBox();
 
     private String lastBidLog;
 
@@ -72,18 +75,19 @@ public class AgentGUI extends Application {
 
     private boolean runningLists;
 
-    private TextField ipInputField = new TextField("ip String");
-    private TextField portInput = new TextField("portNumber int");
-    private TextField aHLInput = new TextField("choice");
-    private TextField itemChoice = new TextField("itemChoice");
-    private TextField bidAmount = new TextField("bid Amount");
-    private TextField depositAmount = new TextField("deposit Amount");
+    private final TextField ipInputField = new TextField("ip String");
+    private final TextField portInput = new TextField("portNumber int");
+    private final TextField aHLInput = new TextField("choice");
+    private final TextField itemChoice = new TextField("itemChoice");
+    private final TextField bidAmount = new TextField("bid Amount");
+    private final TextField depositAmount = new TextField("deposit Amount");
 
     private ScrollPane logDisplay;
 
 
     /**
      * starts the program
+     *
      * @param primaryStage
      */
     @Override
@@ -347,14 +351,14 @@ public class AgentGUI extends Application {
     /**
      * keeps the gui up to date. namely the list of items and the log.
      */
-    private Runnable listUpdater = () -> {
+    private final Runnable listUpdater = () -> {
         Runnable updater = this::update;
         if (agent.getConnectedToBank()) {
             if (agent.getConnectedToAH()) {
                 catalogue = agent.getCatalogue();
             }
             auctionHouses = agent.getAuctionHouses();
-            while(runningLists){
+            while (runningLists) {
                 Platform.runLater(updater);
                 try {
                     Thread.sleep(750);

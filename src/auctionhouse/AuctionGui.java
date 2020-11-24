@@ -1,4 +1,4 @@
-package AuctionHouse;
+package auctionhouse;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -41,23 +41,24 @@ public class AuctionGui extends Application {
      * log: List of incoming/outgoing messages
      * done: boolean to end the program
      */
-    private BorderPane bPane = new BorderPane();
-    private TextField ipInputField = new TextField("");
-    private TextField portInput = new TextField("");
-    private TextField serverInput = new TextField("");
+    private final BorderPane bPane = new BorderPane();
+    private final TextField ipInputField = new TextField("");
+    private final TextField portInput = new TextField("");
+    private final TextField serverInput = new TextField("");
     private ArrayList<Item> catalogue = new ArrayList<>();
-    private VBox listDisplay = new VBox();
+    private final VBox listDisplay = new VBox();
     private AuctionHouse auction;
-    private Button disconnect = new Button("Shutdown");
-    private Button connect = new Button("connect");
-    private VBox vLog = new VBox();
-    private Text id = new Text("ID:");
-    private Text balance = new Text("balance: ");
+    private final Button disconnect = new Button("Shutdown");
+    private final Button connect = new Button("connect");
+    private final VBox vLog = new VBox();
+    private final Text id = new Text("ID:");
+    private final Text balance = new Text("balance: ");
     private ArrayList<String> log = new ArrayList<>();
     private boolean done = false;
 
     /**
      * starts the Gui
+     *
      * @param stage the stage
      */
     @Override
@@ -186,16 +187,16 @@ public class AuctionGui extends Application {
      * This Runnable updates the display of the Gui, but it checks to make
      * sure the Auction House successfully registered with the bank.
      */
-    private Runnable uiUpdater = () ->{
+    private final Runnable uiUpdater = () -> {
         Runnable updater = this::update;
-        if(auction.checkRegistration()){
+        if (auction.checkRegistration()) {
             connect.setDisable(true);
             catalogue = auction.getCatalogue();
             log = auction.getLog();
-            id.setText("ID: "+ auction.getShortId(auction.getAuctionId()));
-            while(!done){
+            id.setText("ID: " + auction.getShortId(auction.getAuctionId()));
+            while (!done) {
                 Platform.runLater(updater);
-                try{
+                try {
                     Thread.sleep(500);
                 }catch (InterruptedException e){
                     e.printStackTrace();

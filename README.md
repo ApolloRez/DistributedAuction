@@ -6,14 +6,14 @@ Introduction
 ============
 This project is focused on auctions between Auction Houses and Agents with
 the Bank as a mediator. Each Auction House registers with the Bank,receives
-its bank ID, and begins selling. Likewise, each Agent registers with the Bank, 
+its bank ID, and begins selling. Likewise, each agent registers with the Bank,
 receives its bank ID, and deposits money. Agents who registered receive
-a list of available Auction Houses from the Bank, and the Agent connects
-with them. An Agent can bid on an Item for sale at the Auction House.
-The Auction House rejects/accepts the bid based on whether the Agent's
-bank account can afford the bid. Once a bid is accepted, neither Agent
-nor Auction House can exit. The Agent is notified if an Item they bid
-on was outbid by someone else, or if they won the Item. The Agent then
+a list of available Auction Houses from the Bank, and the agent connects
+with them. An agent can bid on an Item for sale at the Auction House.
+The Auction House rejects/accepts the bid based on whether the agent's
+bank account can afford the bid. Once a bid is accepted, neither agent
+nor Auction House can exit. The agent is notified if an Item they bid
+on was outbid by someone else, or if they won the Item. The agent then
 requests the Bank to transfer the funds from its account to the Auction 
 House's account.
 
@@ -55,7 +55,7 @@ b) Message commands, ie: register, deregister, transfer_funds, deposit, etc.
 
 Contributions
 =============
-Steven Chase - I did AuctionHouse package, and AuctionMessage in shared.  
+Steven Chase - I did auctionhouse package, and AuctionMessage in shared.
 Magnus Lindland - I did the bank package, and shared.Message class.   
 
 
@@ -66,7 +66,7 @@ all Auction Houses that share said computers IP address will be removed from the
 Auction Houses of the bank. A client can no longer connect to any of these auction houses unless  
 they reregister with the bank.
 * The Items for sale at an Auction House will intially be in sync in terms of time left. Over 
-time, the timers for each item will go out of sync without Agent intervention
+time, the timers for each item will go out of sync without agent intervention
 
 
 Authors

@@ -1,9 +1,10 @@
-package Agent;
+package agent;
 
-import AuctionHouse.Item;
+import auctionhouse.Item;
 import shared.AuctionMessage;
 import shared.Message;
 import shared.NetInfo;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -44,8 +45,8 @@ public class Agent {
     private Socket bankClient = null;
     private Socket auctionClient = null;
 
-    private String bankHostName;
-    private int bankPortNumber;
+    private final String bankHostName;
+    private final int bankPortNumber;
 
     private String auctionHouse;
     private int auctionPort;
@@ -72,14 +73,15 @@ public class Agent {
     private ArrayList<Item> catalogue = new ArrayList<Item>();
 
     private Item attemptedBid;
-    private ArrayList<AuctionHouse.Item> currentlyBidding = new ArrayList<Item>();
-    private ArrayList<Item> wonItems = new ArrayList<Item>();
+    private final ArrayList<auctionhouse.Item> currentlyBidding = new ArrayList<Item>();
+    private final ArrayList<Item> wonItems = new ArrayList<Item>();
 
     Thread bankInThread;
     Thread auctionInThread;
 
     /**
      * constructs the agent with ip and port number of the bank
+     *
      * @param hostName
      * @param portNumber
      */

@@ -1,25 +1,26 @@
-package AuctionHouse;
+package auctionhouse;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.UUID;
 
 public class Item implements Serializable {
-    private String name;  //Name of the item
+    private final String name;  //Name of the item
     private double currentBid; //Double value needed to bid
     private UUID bidderId; //The UUID of the current agent bidder
-    private UUID houseID; //UUID of the auction that created the item
-    private UUID itemID; //UUID of the item
-    private double minimumBid; //Initial bid value
+    private final UUID houseID; //UUID of the auction that created the item
+    private final UUID itemID; //UUID of the item
+    private final double minimumBid; //Initial bid value
     private long timeLeft; //Time left till bid ends(in this case 0)
     private long bidTime; //The timestamp of the latest bid
 
     /**
      * constructor for an Item
-     * @param name name of item
-     * @param value Initial value for bidding
+     *
+     * @param name    name of item
+     * @param value   Initial value for bidding
      * @param houseID The UUID of the auction house that created it
      */
-    public Item(String name, double value,UUID houseID){
+    public Item(String name, double value, UUID houseID) {
         this.minimumBid = value;
         this.currentBid = this.minimumBid;
         this.name = name;
